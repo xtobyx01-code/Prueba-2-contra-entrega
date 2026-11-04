@@ -2224,17 +2224,31 @@ function renderAdminCategories(pane) {
   });
 }
 
-function editCategory(id) {
-  const cat = state.categories.find(c => String(c.id) === String(id));
-  if (!cat) return;
-  document.getElementById('nc-id').value = cat.id || '';
-  document.getElementById('nc-name').value = cat.name;
-  document.getElementById('nc-desc').value = cat.description || '';
-  document.getElementById('nc-icon').value = cat.icon || '';
-  document.getElementById('nc-order').value = cat.sort_order || 0;
-  document.getElementById('nc-active').checked = cat.is_active !== false;
-  document.getElementById('cat-modal-title').textContent = '✏️ Editar categoría';
-  openModal('modal-add-category');
+async function editCategory(id) {
+  try {
+    // Buscamos el ID en las categorías actuales
+    let cat = state.categories.find(c => String(c.id) === String(id));
+    
+    // Si no lo encontramos en memoria, lo buscamos en Supabase
+    if (!cat) {
+      const { data, error } = await supabaseClient.from('categories').select('*').eq('id', id).single();
+      if (error) throw error;
+      cat = data;
+    }
+    
+    if (!cat) return;
+
+    document.getElementById('nc-id').value = cat.id || '';
+    document.getElementById('nc-name').value = cat.name;
+    document.getElementById('nc-desc').value = cat.description || '';
+    document.getElementById('nc-icon').value = cat.icon || '';
+    document.getElementById('nc-order').value = cat.sort_order || 0;
+    document.getElementById('nc-active').checked = cat.is_active !== false;
+    document.getElementById('cat-modal-title').textContent = '✏️ Editar categoría';
+    openModal('modal-add-category');
+  } catch (e) {
+    showToast('Error al abrir categoría: ' + e.message, 'error');
+  }
 }
 
 async function renderAdminSettings(pane) {
