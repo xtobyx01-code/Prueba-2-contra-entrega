@@ -1981,7 +1981,6 @@ async function deleteCategory(id, name) {
     showToast('Categoría eliminada.', 'success');
     await loadCategories();
     
-    // Si el panel de admin está abierto, recargar la tabla
     if (document.getElementById('modal-admin-panel').classList.contains('show')) {
       const pane = document.getElementById('admin-pane-content');
       if (pane && typeof renderAdminCategories === 'function') {
@@ -2004,7 +2003,6 @@ document.getElementById('form-new-cat').addEventListener('submit', async event =
   btn.textContent = 'Guardando...';
 
   const name = document.getElementById('nc-name').value.trim();
-  const description = document.getElementById('nc-desc').value.trim();
   let icon = document.getElementById('nc-icon').value.trim();
   if (!icon && typeof getCategoryIcon === 'function') {
     icon = getCategoryIcon(name);
@@ -2016,7 +2014,8 @@ document.getElementById('form-new-cat').addEventListener('submit', async event =
   if (!name) { btn.disabled = false; btn.textContent = originalText; return; }
 
   try {
-    const payload = { name, description: description || null, icon, sort_order: sortOrder, is_active: isActive };
+    // CORRECCIÓN: Quitamos "description" del payload para que no falle en Supabase
+    const payload = { name, icon, sort_order: sortOrder, is_active: isActive };
     let result;
     
     if (existingId) {
