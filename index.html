@@ -1502,34 +1502,74 @@ document.getElementById('form-admin-login').addEventListener('submit', async eve
   const button = event.target.querySelector('button[type="submit"]');
   button.disabled = true;
   button.textContent = 'Verificando...';
+
   try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password });
-    if (error) throw error;
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email: ADMIN_EMAIL,
+      password
+    });
+
+    if (error) {
+      console.error('[LOGIN] Error auth:', error);
+      const msg = String(error.message || '').toLowerCase();
+      throw new Error(
+        msg.includes('invalid') ? 'Contraseña incorrecta.' :
+        msg.includes('email not confirmed') ? 'El email del administrador no está confirmado en Supabase.' :
+        (error.message || 'Error de autenticación.')
+      );
+    }
+
+    console.log('[LOGIN] Sesión creada:', data?.user?.email);
     const email = (data?.user?.email || '').toLowerCase();
     if (email !== ADMIN_EMAIL.toLowerCase()) {
       await supabaseClient.auth.signOut();
       throw new Error('Esta cuenta no está autorizada como administrador.');
     }
-    let teamOk = false;
+
+    let rpcState = 'unknown';
     try {
       const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('is_store_team_member');
-      if (!rpcErr) teamOk = rpcData === true;
-    } catch {}
-    state.isAdmin = teamOk;
-    state.adminVerified = teamOk;
-    document.body.classList.toggle('is-admin', teamOk);
+      if (rpcErr) {
+        const msg = String(rpcErr.message || '').toLowerCase();
+        const code = rpcErr.code || '';
+        if (
+          msg.includes('could not find') || msg.includes('does not exist') ||
+          msg.includes('not found') || code === '42883' || code === 'PGRST202'
+        ) {
+          rpcState = 'missing';
+          console.warn('[LOGIN] RPC no existe. Autorizado por email.');
+        } else {
+          rpcState = 'error';
+          console.warn('[LOGIN] RPC error:', rpcErr);
+        }
+      } else {
+        rpcState = (rpcData === true) ? 'ok-true' : 'ok-false';
+      }
+    } catch (e) {
+      rpcState = 'error';
+      console.warn('[LOGIN] RPC excepción:', e);
+    }
+
+    if (rpcState === 'ok-false') {
+      await supabaseClient.auth.signOut();
+      state.isAdmin = false;
+      document.body.classList.remove('is-admin');
+      throw new Error('El RPC is_store_team_member devolvió FALSE. Tu usuario no pertenece al equipo.');
+    }
+
+    state.isAdmin = true;
+    state.adminVerified = (rpcState === 'ok-true');
+    document.body.classList.add('is-admin');
+
     closeModal('modal-admin-login');
     document.getElementById('adm-pass').value = '';
-    if (teamOk) {
-      showToast('Administrador verificado.', 'success');
-      await fetchProducts();
-      openAdminPanel();
-    } else {
-      showToast('No estás autorizado como miembro del equipo.', 'error');
-    }
+    showToast('Administrador verificado.', 'success');
+    await fetchProducts();
+    openAdminPanel();
+
   } catch (error) {
-    console.error(error);
-    showToast(error.message?.includes('Invalid') ? 'Contraseña incorrecta.' : (error.message || 'Error de autenticación.'), 'error');
+    console.error('[LOGIN] Falla:', error);
+    showToast(error.message || 'Error de autenticación.', 'error');
   } finally {
     button.disabled = false;
     button.textContent = 'Iniciar sesión';
