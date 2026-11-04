@@ -1307,8 +1307,11 @@ document.getElementById('form-checkout').addEventListener('submit', async event 
       payment_status: 'pending',
       status: 'pending'
     };
-    const { error } = await supabaseClient.from('web_orders').insert([orderData]);
-    if (error) { console.error('Error guardando pedido:', error); throw new Error('No pudimos registrar tu pedido: ' + error.message); }
+        const insertResult = await insertOrderRobust(orderData);
+    if (!insertResult.ok) {
+      console.error('Error guardando pedido:', insertResult.error);
+      throw new Error('No pudimos registrar tu pedido: ' + (insertResult.error?.message || 'error desconocido'));
+    }
 
     const waNumber = getWhatsAppNumber();
     const itemsText = details.map(d => `  • ${d.product.name} ×${d.qty} — RD$ ${formatPrice(d.lineTotal)}`).join('\n');
