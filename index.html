@@ -956,7 +956,11 @@ async function loadCategories() {
   let categories = [];
   try {
     let query = supabaseClient.from('categories').select('*');
-    if (!state.isAdmin) query = query.eq('is_active', true);
+    // Intentamos filtrar, pero si falla por falta de columna, mostramos todas
+    try {
+      if (!state.isAdmin) query = query.eq('is_active', true);
+    } catch(e) {}
+    
     const { data, error } = await query.order('sort_order', { ascending: true });
     if (!error && data) {
       categories = data.map(item => ({
@@ -985,6 +989,7 @@ function renderCategories() {
   if (!horizontal || !nav) return;
   const current = state.currentCategory;
   
+  // 1. Categorías horizontales (arriba)
   let html = `
     <button class="category-circle ${current === '' ? 'active' : ''}" data-cat="">
       <span class="category-icon">🛍️</span><span>Todos</span>
@@ -998,37 +1003,31 @@ function renderCategories() {
   });
   horizontal.innerHTML = html;
   
+  // 2. Menú lateral (limpio, sin botones por categoría)
   let navHtml = `
     <button class="cat-item ${current === '' ? 'active' : ''}" data-cat="">
       <i>🏠</i> Todos los productos
     </button>`;
     
   state.categories.forEach(cat => {
-    const inactiveStyle = (state.isAdmin && cat.is_active === false) ? 'opacity:0.55;' : '';
-    
-    // Aquí creamos la fila con los botones a la derecha
-    let adminButtons = '';
-    if (state.isAdmin && cat.id) {
-      adminButtons = `
-        <div style="display:flex; align-items:center; gap:2px;">
-          <button onclick="event.stopPropagation(); editCategory('${escapeHtml(cat.id)}')" style="background:none; border:none; cursor:pointer; font-size:15px; padding:4px;" title="Editar">✏️</button>
-          <button onclick="event.stopPropagation(); deleteCategory('${escapeHtml(cat.id)}', '${escapeHtml(cat.name)}')" style="background:none; border:none; cursor:pointer; font-size:15px; padding:4px;" title="Eliminar">🗑️</button>
-        </div>
-      `;
-    }
-
     navHtml += `
-      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}" style="display:flex; align-items:center; justify-content:space-between; width:100%; ${inactiveStyle}">
-        <div style="display:flex; align-items:center; gap:10px;">
-          <i>${escapeHtml(cat.icon)}</i> 
-          <span>${escapeHtml(cat.name)}</span>
-        </div>
-        ${adminButtons}
+      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}">
+        <i>${escapeHtml(cat.icon)}</i> ${escapeHtml(cat.name)}
       </button>`;
   });
   
+  // 3. Botones de Administración al final del menú
   if (state.isAdmin) {
-    navHtml += `<button class="cat-item" onclick="handleAddCategoryClick()" style="color:var(--orange); margin-top:10px;"><i>＋</i> Nueva categoría</button>`;
+    navHtml += `
+      <div style="margin-top: 20px; border-top: 1px solid var(--border); padding-top: 15px;">
+        <button class="cat-item" onclick="openAdminPanelCategories()" style="color:var(--navy); font-weight:800; justify-content: center;">
+          <i>⚙️</i> Administrar Categorías
+        </button>
+        <button class="cat-item" onclick="handleAddCategoryClick()" style="color:var(--orange); justify-content: center;">
+          <i>＋</i> Nueva categoría
+        </button>
+      </div>
+    `;
   }
   
   nav.innerHTML = navHtml;
@@ -1037,6 +1036,23 @@ function renderCategories() {
   if (datalist) {
     datalist.innerHTML = state.categories.map(cat => `<option value="${escapeHtml(cat.name)}">`).join('');
   }
+}
+
+// Función para abrir el panel de admin directo en la pestaña de Categorías
+function openAdminPanelCategories() {
+  if (!state.isAdmin) return;
+  toggleDrawer(false); // Cierra el menú lateral
+  openModal('modal-admin-panel'); // Abre el panel
+  
+  // Pone la pestaña de "Categorías" en activo
+  document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+  const catTab = document.querySelector('.admin-tab[data-tab="categories"]');
+  if (catTab) catTab.classList.add('active');
+  
+  // Carga la tabla de categorías
+  const pane = document.getElementById('admin-pane-content');
+  pane.innerHTML = `<div class="loading-state"><div class="spinner"></div>Cargando...</div>`;
+  renderAdminCategories(pane);
 }
 
 /* =====================================================
