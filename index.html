@@ -1390,6 +1390,7 @@ async function checkAdminSession() {
   try {
     const { data, error } = await supabaseClient.auth.getSession();
     if (error) throw error;
+
     const session = data?.session;
     if (!session) {
       state.isAdmin = false;
@@ -1397,25 +1398,62 @@ async function checkAdminSession() {
       document.body.classList.remove('is-admin');
       return;
     }
+
     const email = (session.user?.email || '').toLowerCase();
+    console.log('[ADMIN] Email sesión:', email);
+
     if (email !== ADMIN_EMAIL.toLowerCase()) {
+      console.warn('[ADMIN] Email no autorizado:', email);
       state.isAdmin = false;
       state.adminVerified = false;
       document.body.classList.remove('is-admin');
       return;
     }
-    let teamOk = false;
+
+    // RPC opcional: si NO existe → autoriza por email. Si existe y devuelve false → bloquea.
+    let rpcState = 'unknown';
     try {
       const { data: rpcData, error: rpcErr } = await supabaseClient.rpc('is_store_team_member');
-      if (!rpcErr) teamOk = rpcData === true;
-    } catch (rpcE) {
-      console.warn('is_store_team_member no disponible:', rpcE?.message || rpcE);
+      if (rpcErr) {
+        const msg = String(rpcErr.message || '').toLowerCase();
+        const code = rpcErr.code || '';
+        if (
+          msg.includes('could not find') ||
+          msg.includes('does not exist') ||
+          msg.includes('not found') ||
+          code === '42883' ||
+          code === 'PGRST202'
+        ) {
+          rpcState = 'missing';
+          console.warn('[ADMIN] RPC is_store_team_member NO EXISTE. Autorizado por email.');
+        } else {
+          rpcState = 'error';
+          console.warn('[ADMIN] RPC error:', rpcErr);
+        }
+      } else {
+        rpcState = (rpcData === true) ? 'ok-true' : 'ok-false';
+        console.log('[ADMIN] RPC is_store_team_member →', rpcData);
+      }
+    } catch (e) {
+      rpcState = 'error';
+      console.warn('[ADMIN] RPC excepción:', e);
     }
-    state.adminVerified = teamOk;
-    state.isAdmin = teamOk;
-    document.body.classList.toggle('is-admin', teamOk);
-  } catch (error) {
-    console.warn('Sesión admin:', error);
+
+    if (rpcState === 'ok-false') {
+      state.isAdmin = false;
+      state.adminVerified = false;
+      document.body.classList.remove('is-admin');
+      console.warn('[ADMIN] RPC devolvió FALSE. Bloqueado.');
+      return;
+    }
+
+    state.isAdmin = true;
+    state.adminVerified = (rpcState === 'ok-true');
+    document.body.classList.add('is-admin');
+    console.log('[ADMIN] Acceso concedido. rpcState =', rpcState);
+
+  } catch (err) {
+    console.warn('[ADMIN] Sesión error:', err);
     state.isAdmin = false;
     state.adminVerified = false;
     document.body.classList.remove('is-admin');
