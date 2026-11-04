@@ -576,9 +576,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         <div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="nc-name" class="form-input" required maxlength="60"></div>
         <div class="form-group"><label class="form-label">Descripción</label><textarea id="nc-desc" class="form-input" maxlength="200"></textarea></div>
         <div class="form-row">
-          <div class="form-group"><label class="form-label">Icono</label><input type="text" id="nc-icon" class="form-input" maxlength="8" placeholder="📱"></div>
-          <div class="form-group"><label class="form-label">Orden</label><input type="number" id="nc-order" class="form-input" min="0" value="0"></div>
-        </div>
+  <div class="form-group">
+    <label class="form-label">Icono (Emoji)</label>
+    <div style="display:flex; gap:8px;">
+      <input type="text" id="nc-icon" class="form-input" maxlength="8" placeholder="📱" style="flex:1;">
+      <button type="button" class="btn-secondary" style="width:auto; margin:0; padding:0 12px;" onclick="autoDetectIcon()" title="Detectar automáticamente">✨ Auto</button>
+    </div>
+  </div>
+  <div class="form-group"><label class="form-label">Orden</label><input type="number" id="nc-order" class="form-input" min="0" value="0"></div>
+</div>
         <div class="form-group" style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="nc-active" checked style="width:auto;">
           <label for="nc-active" class="form-label" style="margin:0;">Categoría activa</label>
@@ -899,12 +905,55 @@ function getWhatsAppNumber() {
    CATEGORÍAS
 ===================================================== */
 function getCategoryIcon(name) {
+  const n = String(name || '').toLowerCase().trim();
+  
+  // Diccionario ampliado con palabras clave
   const icons = {
-    ropa: '👕', electronica: '💻', electrónica: '💻', tecnologia: '📱', tecnología: '📱',
-    hogar: '🏠', zapatos: '👟', calzado: '👟', belleza: '💄', accesorios: '👜',
-    deportes: '⚽', juguetes: '🧸', salud: '💊', cocina: '🍳', relojes: '⌚', general: '📦'
+    // Calzado
+    zapatos: '👟', zapato: '👟', calzado: '👟', tenis: '👟', zapatillas: '👟',
+    sandalias: '🩴', botas: '👢', tacones: '👠', pantuflas: '🥿',
+    
+    // Ropa
+    ropa: '👕', camisas: '👔', camisa: '👔', pantalones: '👖', pantalon: '👖',
+    jeans: '👖', vestidos: '👗', vestido: '👗', faldas: '👗', ropa_interior: '🩲',
+    interior: '🩲', trajes: '🤵', abrigos: '🧥', chaquetas: '🧥', sueteres: '🧶',
+    medias: '🧦', calcetines: '🧦',
+    
+    // Accesorios / Gorras
+    gorras: '🧢', gorra: '🧢', sombreros: '👒', sombrero: '👒', cinturones: '👖',
+    bolsos: '👜', carteras: '👛', mochilas: '🎒', gafas: '🕶️', lentes: '🕶️',
+    relojes: '⌚', reloj: '⌚', joyas: '💍', bisuteria: '💍',
+    
+    // Perfumes / Belleza
+    perfumes: '🧴', perfume: '🧴', fragancias: '🧴', colonias: '🧴',
+    belleza: '💄', maquillaje: '💄', cuidado: '🧴', cremas: '🧴',
+    
+    // Electrónica / Tecnología
+    electronica: '💻', electrónica: '💻', tecnologia: '📱', tecnología: '📱',
+    celulares: '📱', celular: '📱', telefonos: '📱', teléfonos: '📱',
+    computadoras: '💻', laptops: '💻', audifonos: '🎧', audífonos: '🎧',
+    bocinas: '🔊', televisores: '📺', tv: '📺', consolas: '🎮', videojuegos: '🎮',
+    
+    // Hogar / Cocina
+    hogar: '🏠', casa: '🏠', muebles: '🛋️', cocina: '🍳', electrodomesticos: '🔌',
+    electrodomésticos: '🔌', decoracion: '🖼️', decoración: '🖼️', camas: '🛏️',
+    
+    // Otros
+    deportes: '⚽', juguetes: '🧸', niños: '🧸', bebes: '🍼', bebés: '🍼',
+    salud: '💊', farmacia: '💊', alimentos: '🍎', comida: '🍎', bebidas: '🥤',
+    libros: '📚', papeleria: '✏️', papelería: '✏️', mascotas: '🐶',
+    herramientas: '🛠️', autos: '🚗', carros: '🚗', motos: '🏍️'
   };
-  return icons[String(name || '').toLowerCase()] || '📦';
+
+  // 1. Búsqueda exacta
+  if (icons[n]) return icons[n];
+
+  // 2. Búsqueda por palabra contenida (ej. "Zapatos deportivos" -> 👟)
+  for (const key in icons) {
+    if (n.includes(key)) return icons[key];
+  }
+
+  return '📦'; // Por defecto
 }
 async function loadCategories() {
   let categories = [];
