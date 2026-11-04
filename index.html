@@ -2238,18 +2238,6 @@ function renderAdminCategories(pane) {
     `;
   });
 }
-    
-    pane.innerHTML = `
-      <button class="btn-primary" style="margin-bottom:12px;" onclick="handleAddCategoryClick()">➕ Nueva categoría</button>
-      <div class="table-wrap">
-        <table class="data-table">
-          <thead><tr><th>Icono</th><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Orden</th><th>Acciones</th></tr></thead>
-          <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Sin categorías</td></tr>'}</tbody>
-        </table>
-      </div>
-    `;
-  });
-}
 
 async function renderAdminSettings(pane) {
   const keys = [
@@ -2280,21 +2268,18 @@ async function renderAdminSettings(pane) {
     btn.disabled = true;
     btn.textContent = 'Guardando...';
     try {
-            for (const { k } of keys) {
+      for (const { k } of keys) {
         const val = document.getElementById('setting-' + k).value.trim();
         if (!val && state.settings[k] === undefined) continue;
         const payload = { key: k, value: val, updated_at: new Date().toISOString() };
 
-        // 1er intento: upsert normal
         let { error } = await supabaseClient.from('app_settings').upsert(payload, { onConflict: 'key' });
 
-        // 2do intento: update por key
         if (error) {
           const res = await supabaseClient.from('app_settings').update({ value: val, updated_at: payload.updated_at }).eq('key', k);
           error = res.error;
         }
 
-        // 3er intento: insert
         if (error) {
           const res = await supabaseClient.from('app_settings').insert([payload]);
           error = res.error;
