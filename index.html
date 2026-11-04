@@ -2239,6 +2239,61 @@ function renderAdminCategories(pane) {
   });
 }
 
+async function editCategory(id) {
+  try {
+    let cat = state.categories.find(c => String(c.id) === String(id));
+    
+    if (!cat) {
+      const { data, error } = await supabaseClient.from('categories').select('*').eq('id', id).single();
+      if (error) throw error;
+      cat = data;
+    }
+    
+    if (!cat) return;
+
+    document.getElementById('nc-id').value = cat.id || '';
+    document.getElementById('nc-name').value = cat.name;
+    document.getElementById('nc-desc').value = cat.description || '';
+    document.getElementById('nc-icon').value = cat.icon || '';
+    document.getElementById('nc-order').value = cat.sort_order || 0;
+    document.getElementById('nc-active').checked = cat.is_active !== false;
+    document.getElementById('cat-modal-title').textContent = '✏️ Editar categoría';
+    document.getElementById('nc-submit-btn').textContent = 'Actualizar categoría';
+    openModal('modal-add-category');
+  } catch (e) {
+    console.error(e);
+    showToast('Error al abrir categoría: ' + e.message, 'error');
+  }
+}
+
+async function deleteCategory(id, name) {
+  if (!state.isAdmin) return;
+  
+  const hasProducts = state.products.some(p => p.category === name);
+  
+  let msg = `¿Estás seguro de que quieres eliminar la categoría "${name}"?`;
+  if (hasProducts) {
+    msg = `⚠️ ATENCIÓN: Hay productos asignados a la categoría "${name}". Si la eliminas, esos productos podrían quedar sin categoría visible.\n\n¿Deseas continuar de todas formas?`;
+  }
+
+  if (!confirm(msg)) return;
+
+  try {
+    const { error } = await supabaseClient.from('categories').delete().eq('id', id);
+    if (error) throw error;
+    
+    showToast('Categoría eliminada.', 'success');
+    await loadCategories();
+    
+    const pane = document.getElementById('admin-pane-content');
+    if (pane) renderAdminCategories(pane);
+    
+  } catch (error) {
+    console.error(error);
+    showToast('Error al eliminar: ' + error.message, 'error');
+  }
+}
+
 async function renderAdminSettings(pane) {
   const keys = [
     { k: 'store_name', label: 'Nombre de la tienda' },
@@ -2317,7 +2372,6 @@ if (supabaseClient) {
       event === 'INITIAL_SESSION' ||
       event === 'TOKEN_REFRESHED'
     ) {
-      // Solo re-verificar si el email coincide Y no estamos ya como admin
       if (
         session?.user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase() &&
         !state.isAdmin
