@@ -1106,6 +1106,60 @@ document.getElementById('open-cart-btn').addEventListener('click', () => toggleC
 document.getElementById('cart-overlay').addEventListener('click', () => toggleCart(false));
 
 /* =====================================================
+   INSERCIÓN ROBUSTA DE PEDIDOS
+===================================================== */
+async function insertOrderRobust(baseData) {
+  const tryInsert = async (payload) => {
+    const { error } = await supabaseClient.from('web_orders').insert([payload]);
+    return error ? { ok: false, error } : { ok: true };
+  };
+
+  // Intento 1: completo (items string, status pending, con order_number)
+  const attempt1 = { ...baseData, items: JSON.stringify(baseData.items || []) };
+  let r = await tryInsert(attempt1);
+  if (r.ok) return { ok: true };
+
+  const firstErr = r.error;
+
+  // Intento 2: sin order_number
+  const attempt2 = { ...attempt1 };
+  delete attempt2.order_number;
+  r = await tryInsert(attempt2);
+  if (r.ok) { console.warn('Pedido OK sin order_number:', firstErr?.message); return { ok: true }; }
+
+  // Intento 3: status = 'nuevo'
+  const attempt3 = { ...attempt2, status: 'nuevo' };
+  r = await tryInsert(attempt3);
+  if (r.ok) { console.warn("Pedido OK con status='nuevo':", firstErr?.message); return { ok: true }; }
+
+  // Intento 4: items como array (jsonb pura)
+  const attempt4 = { ...attempt2, items: baseData.items || [] };
+  r = await tryInsert(attempt4);
+  if (r.ok) { console.warn('Pedido OK con items array:', firstErr?.message); return { ok: true }; }
+
+  // Intento 5: nuevo + items array
+  const attempt5 = { ...attempt2, status: 'nuevo', items: baseData.items || [] };
+  r = await tryInsert(attempt5);
+  if (r.ok) { console.warn('Pedido OK combo:', firstErr?.message); return { ok: true }; }
+
+  // Intento 6: mínimo compatible con el original
+  const attempt6 = {
+    order_code: baseData.order_code,
+    product_id: baseData.product_id || null,
+    product_name_snapshot: baseData.product_name_snapshot || null,
+    product_price_snapshot: baseData.product_price_snapshot || null,
+    customer_name: baseData.customer_name,
+    customer_phone: baseData.customer_phone,
+    address_note: baseData.customer_address + (baseData.delivery_zone ? ' | Zona: ' + baseData.delivery_zone : ''),
+    status: 'nuevo'
+  };
+  r = await tryInsert(attempt6);
+  if (r.ok) { console.warn('Pedido OK modo compatibilidad:', firstErr?.message); return { ok: true }; }
+
+  return { ok: false, error: r.error || firstErr };
+}
+
+/* =====================================================
    PEDIDO INDIVIDUAL
 ===================================================== */
 function startRequest(productId) {
