@@ -1462,16 +1462,36 @@ async function checkAdminSession() {
 
 let adminClickCount = 0;
 let adminClickTimer = null;
-document.getElementById('admin-trigger-icon').addEventListener('click', () => {
+let adminLastTap = 0;
+
+function adminTrigger() {
   adminClickCount++;
   clearTimeout(adminClickTimer);
   adminClickTimer = setTimeout(() => { adminClickCount = 0; }, 1500);
   if (adminClickCount >= 3) {
     adminClickCount = 0;
-    if (state.isAdmin) openAdminPanel();
-    else openModal('modal-admin-login');
+    if (state.isAdmin) {
+      openAdminPanel();
+    } else {
+      const form = document.getElementById('form-admin-login');
+      if (form) {
+        form.reset();
+        const btn = form.querySelector('button[type="submit"]');
+        if (btn) { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
+      }
+      openModal('modal-admin-login');
+    }
   }
-});
+}
+
+const adminTriggerEl = document.getElementById('admin-trigger-icon');
+adminTriggerEl.addEventListener('click', adminTrigger);
+adminTriggerEl.addEventListener('touchend', e => {
+  const now = Date.now();
+  if (now - adminLastTap < 300) return;
+  adminLastTap = now;
+  adminTrigger();
+}, { passive: true });
 
 /* =====================================================
    LOGIN ADMIN
