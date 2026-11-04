@@ -1954,7 +1954,7 @@ async function editCategory(id) {
     document.getElementById('nc-desc').value = cat.description || '';
     document.getElementById('nc-icon').value = cat.icon || '';
     document.getElementById('nc-order').value = cat.sort_order || 0;
-    document.getElementById('nc-active').checked = cat.is_active !== false;
+    document.getElementById('nc-active').checked = true;
     document.getElementById('cat-modal-title').textContent = '✏️ Editar categoría';
     document.getElementById('nc-submit-btn').textContent = 'Actualizar categoría';
     openModal('modal-add-category');
@@ -1982,6 +1982,7 @@ async function deleteCategory(id, name) {
     
     showToast('Categoría eliminada.', 'success');
     await loadCategories();
+    renderCategories();
     
     if (document.getElementById('modal-admin-panel').classList.contains('show')) {
       const pane = document.getElementById('admin-pane-content');
@@ -2010,14 +2011,13 @@ document.getElementById('form-new-cat').addEventListener('submit', async event =
     icon = getCategoryIcon(name);
   }
   const sortOrder = parseInt(document.getElementById('nc-order').value) || 0;
-  const isActive = document.getElementById('nc-active').checked;
   const existingId = document.getElementById('nc-id').value;
   
   if (!name) { btn.disabled = false; btn.textContent = originalText; return; }
 
   try {
-    // CORRECCIÓN: Quitamos "description" del payload para que no falle en Supabase
-    const payload = { name, icon, sort_order: sortOrder, is_active: isActive };
+    // Dejamos solo las columnas que SÍ existen en tu base de datos
+    const payload = { name, icon, sort_order: sortOrder };
     let result;
     
     if (existingId) {
