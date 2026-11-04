@@ -905,6 +905,19 @@ function getWhatsAppNumber() {
    CATEGORÍAS
 ===================================================== */
 function getCategoryIcon(name) {
+  function autoDetectIcon() {
+  const nameInput = document.getElementById('nc-name');
+  const iconInput = document.getElementById('nc-icon');
+  if (nameInput && iconInput) {
+    const name = nameInput.value.trim();
+    if (name) {
+      iconInput.value = getCategoryIcon(name);
+      showToast('Icono detectado automáticamente.', 'info');
+    } else {
+      showToast('Escribe primero el nombre de la categoría.', 'error');
+    }
+  }
+}
   const n = String(name || '').toLowerCase().trim();
   
   // Diccionario ampliado con palabras clave
