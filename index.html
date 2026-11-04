@@ -1920,6 +1920,7 @@ function handleAddCategoryClick() {
   document.getElementById('form-new-cat').reset();
   document.getElementById('nc-id').value = '';
   document.getElementById('cat-modal-title').textContent = '➕ Nueva categoría';
+  document.getElementById('nc-submit-btn').textContent = 'Guardar categoría';
   document.getElementById('nc-active').checked = true;
   document.getElementById('nc-order').value = state.categories.length;
   openModal('modal-add-category');
