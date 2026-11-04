@@ -1917,7 +1917,10 @@ document.getElementById('form-new-cat').addEventListener('submit', async event =
   if (!state.isAdmin) return;
   const name = document.getElementById('nc-name').value.trim();
   const description = document.getElementById('nc-desc').value.trim();
-  const icon = document.getElementById('nc-icon').value.trim() || '📦';
+      let icon = document.getElementById('nc-icon').value.trim();
+    if (!icon) {
+      icon = getCategoryIcon(name); // Si está vacío, detecta automáticamente
+    }
   const sortOrder = parseInt(document.getElementById('nc-order').value) || 0;
   const isActive = document.getElementById('nc-active').checked;
   const existingId = document.getElementById('nc-id').value;
