@@ -907,53 +907,35 @@ function getWhatsAppNumber() {
 function getCategoryIcon(name) {
   const n = String(name || '').toLowerCase().trim();
   
-  // Diccionario ampliado con palabras clave
   const icons = {
-    // Calzado
     zapatos: '👟', zapato: '👟', calzado: '👟', tenis: '👟', zapatillas: '👟',
     sandalias: '🩴', botas: '👢', tacones: '👠', pantuflas: '🥿',
-    
-    // Ropa
     ropa: '👕', camisas: '👔', camisa: '👔', pantalones: '👖', pantalon: '👖',
     jeans: '👖', vestidos: '👗', vestido: '👗', faldas: '👗', ropa_interior: '🩲',
     interior: '🩲', trajes: '🤵', abrigos: '🧥', chaquetas: '🧥', sueteres: '🧶',
     medias: '🧦', calcetines: '🧦',
-    
-    // Accesorios / Gorras
     gorras: '🧢', gorra: '🧢', sombreros: '👒', sombrero: '👒', cinturones: '👖',
     bolsos: '👜', carteras: '👛', mochilas: '🎒', gafas: '🕶️', lentes: '🕶️',
     relojes: '⌚', reloj: '⌚', joyas: '💍', bisuteria: '💍',
-    
-    // Perfumes / Belleza
     perfumes: '🧴', perfume: '🧴', fragancias: '🧴', colonias: '🧴',
     belleza: '💄', maquillaje: '💄', cuidado: '🧴', cremas: '🧴',
-    
-    // Electrónica / Tecnología
     electronica: '💻', electrónica: '💻', tecnologia: '📱', tecnología: '📱',
     celulares: '📱', celular: '📱', telefonos: '📱', teléfonos: '📱',
     computadoras: '💻', laptops: '💻', audifonos: '🎧', audífonos: '🎧',
     bocinas: '🔊', televisores: '📺', tv: '📺', consolas: '🎮', videojuegos: '🎮',
-    
-    // Hogar / Cocina
     hogar: '🏠', casa: '🏠', muebles: '🛋️', cocina: '🍳', electrodomesticos: '🔌',
     electrodomésticos: '🔌', decoracion: '🖼️', decoración: '🖼️', camas: '🛏️',
-    
-    // Otros
     deportes: '⚽', juguetes: '🧸', niños: '🧸', bebes: '🍼', bebés: '🍼',
     salud: '💊', farmacia: '💊', alimentos: '🍎', comida: '🍎', bebidas: '🥤',
     libros: '📚', papeleria: '✏️', papelería: '✏️', mascotas: '🐶',
     herramientas: '🛠️', autos: '🚗', carros: '🚗', motos: '🏍️'
   };
 
-  // 1. Búsqueda exacta
   if (icons[n]) return icons[n];
-
-  // 2. Búsqueda por palabra contenida (ej. "Zapatos deportivos" -> 👟)
   for (const key in icons) {
     if (n.includes(key)) return icons[key];
   }
-
-  return '📦'; // Por defecto
+  return '📦';
 }
 
 function autoDetectIcon() {
@@ -1032,7 +1014,6 @@ function renderCategories() {
     datalist.innerHTML = state.categories.map(cat => `<option value="${escapeHtml(cat.name)}">`).join('');
   }
 }
-}
 
 /* =====================================================
    PRODUCTOS
@@ -1062,6 +1043,7 @@ async function fetchProducts() {
       </div>`;
   }
 }
+
 function renderProductGrid() {
   const container = document.getElementById('products-display-area');
   const empty = document.getElementById('empty-state-msg');
@@ -1089,6 +1071,7 @@ function renderProductGrid() {
     state.currentCategory ? state.currentCategory :
     state.searchTerm ? 'Resultados de búsqueda' : 'Productos destacados';
 }
+
 function createProductCard(product) {
   const stock = Number(product.stock || 0);
   const out = stock <= 0;
