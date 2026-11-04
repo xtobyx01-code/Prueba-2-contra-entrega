@@ -1882,6 +1882,7 @@ document.getElementById('form-new-product').addEventListener('submit', async eve
   const originalText = button.textContent;
   button.disabled = true;
   button.textContent = 'Guardando producto...';
+  
   try {
     const name = document.getElementById('np-name').value.trim();
     const price = parseFloat(document.getElementById('np-price').value);
@@ -1889,19 +1890,30 @@ document.getElementById('form-new-product').addEventListener('submit', async eve
     const salePrice = salePriceRaw ? parseFloat(salePriceRaw) : null;
     const category = document.getElementById('np-category').value.trim();
     const stock = parseInt(document.getElementById('np-stock').value) || 0;
-    const sku = document.getElementById('np-sku').value.trim();
+    
+    // --- GENERADOR AUTOMÁTICO DE SKU ---
+    let sku = document.getElementById('np-sku').value.trim();
+    if (!sku) {
+      const prefix = category ? category.substring(0, 3).toUpperCase() : 'PROD';
+      sku = `${prefix}-${Math.floor(10000 + Math.random() * 90000)}`;
+    }
+    // -----------------------------------
+
     const description = document.getElementById('np-desc').value.trim();
     const supplier = document.getElementById('np-supplier').value.trim();
     const isFeatured = document.getElementById('np-featured').checked;
     const isActive = document.getElementById('np-active').checked;
     const existingId = document.getElementById('np-id').value;
+    
     if (!name || !category || !Number.isFinite(price) || price <= 0) throw new Error('Revisa el nombre, la categoría y el precio.');
     if (salePrice !== null && (!Number.isFinite(salePrice) || salePrice < 0 || salePrice >= price)) throw new Error('El precio de oferta debe ser menor que el precio normal.');
+    
     let imageUrl = '';
     if (existingId) {
       const old = state.products.find(item => String(item.id) === String(existingId));
       imageUrl = old?.image_url || '';
     }
+    
     if (currentImageFile) {
       showToast('Optimizando fotografía...', 'info');
       const blob = await compressImage(currentImageFile);
@@ -1911,24 +1923,31 @@ document.getElementById('form-new-product').addEventListener('submit', async eve
       const { data: publicData } = supabaseClient.storage.from('productos').getPublicUrl(filename);
       imageUrl = publicData.publicUrl;
     }
+    
     if (!imageUrl && !existingId) throw new Error('Debes seleccionar una fotografía del producto.');
+    
     const productData = {
       name, price, category, stock, description,
       supplier_whatsapp: supplier || null,
       image_url: imageUrl || null,
       is_active: isActive,
-      is_featured: isFeatured
+      is_featured: isFeatured,
+      sku: sku // <-- Aquí pasamos el SKU (automático o manual)
     };
-    if (sku) productData.sku = sku;
+    
     if (salePrice !== null && salePrice > 0) productData.sale_price = salePrice;
+    
     let result;
     if (existingId) result = await supabaseClient.from('products').update(productData).eq('id', existingId);
     else result = await supabaseClient.from('products').insert([productData]);
+    
     if (result.error) throw result.error;
+    
     showToast(existingId ? 'Producto actualizado.' : 'Producto creado.', 'success');
     closeModal('modal-new-product');
     currentImageFile = null;
     await fetchProducts();
+    
   } catch (error) {
     console.error(error);
     showToast(error.message, 'error');
