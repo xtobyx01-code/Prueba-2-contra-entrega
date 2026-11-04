@@ -2051,9 +2051,13 @@ async function changeOrderStatus(orderId, newStatus) {
   try {
     const { error } = await supabaseClient.from('web_orders').update({ status: newStatus }).eq('id', orderId);
     if (error) throw error;
-    showToast('Estado actualizado.', 'success');
+    showToast('Estado actualizado a "' + newStatus + '".', 'success');
   } catch (error) {
-    showToast('Error: ' + error.message, 'error');
+    console.error('Error cambio estado:', error);
+    showToast(
+      'No se pudo cambiar a "' + newStatus + '". Verifica que ese valor esté permitido en tu base de datos. Detalle: ' + error.message,
+      'error'
+    );
     const pane = document.getElementById('admin-pane-content');
     await renderAdminOrders(pane);
   }
@@ -2183,12 +2187,31 @@ async function renderAdminSettings(pane) {
     btn.disabled = true;
     btn.textContent = 'Guardando...';
     try {
-      for (const { k } of keys) {
+            for (const { k } of keys) {
         const val = document.getElementById('setting-' + k).value.trim();
         if (!val && state.settings[k] === undefined) continue;
-        const { error } = await supabaseClient.from('app_settings').upsert({ key: k, value: val, updated_at: new Date().toISOString() }, { onConflict: 'key' });
-        if (error) throw error;
-        state.settings[k] = val;
+        const payload = { key: k, value: val, updated_at: new Date().toISOString() };
+
+        // 1er intento: upsert normal
+        let { error } = await supabaseClient.from('app_settings').upsert(payload, { onConflict: 'key' });
+
+        // 2do intento: update por key
+        if (error) {
+          const res = await supabaseClient.from('app_settings').update({ value: val, updated_at: payload.updated_at }).eq('key', k);
+          error = res.error;
+        }
+
+        // 3er intento: insert
+        if (error) {
+          const res = await supabaseClient.from('app_settings').insert([payload]);
+          error = res.error;
+        }
+
+        if (error) {
+          console.warn('No se pudo guardar setting', k, error.message);
+        } else {
+          state.settings[k] = val;
+        }
       }
       showToast('Configuración guardada.', 'success');
     } catch (error) {
