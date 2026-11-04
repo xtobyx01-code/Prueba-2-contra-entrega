@@ -1004,29 +1004,31 @@ function renderCategories() {
     </button>`;
     
   state.categories.forEach(cat => {
-    const inactiveStyle = (state.isAdmin && cat.is_active === false) ? 'style="opacity:.55;"' : '';
+    const inactiveStyle = (state.isAdmin && cat.is_active === false) ? 'opacity:.55;' : '';
     
-    // Si es admin, le agregamos los botones al lado
     let adminButtons = '';
     if (state.isAdmin && cat.id) {
       adminButtons = `
-        <div style="margin-left:auto; display:flex; gap:4px;" onclick="event.stopPropagation();">
-          <button onclick="editCategory('${escapeHtml(cat.id)}')" style="background:none; border:none; cursor:pointer; font-size:14px; padding:4px;" title="Editar">✏️</button>
-          <button onclick="deleteCategory('${escapeHtml(cat.id)}', '${escapeHtml(cat.name)}')" style="background:none; border:none; cursor:pointer; font-size:14px; padding:4px;" title="Eliminar">🗑️</button>
+        <div style="display:flex; gap:4px;" onclick="event.stopPropagation();">
+          <button onclick="editCategory('${escapeHtml(cat.id)}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px;" title="Editar">✏️</button>
+          <button onclick="deleteCategory('${escapeHtml(cat.id)}', '${escapeHtml(cat.name)}')" style="background:none; border:none; cursor:pointer; font-size:16px; padding:4px;" title="Eliminar">🗑️</button>
         </div>
       `;
     }
 
+    // Contenedor Flex para que quede en una sola línea sin desbordarse
     navHtml += `
-      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}" ${inactiveStyle} style="display:flex; align-items:center; width:100%;">
-        <i>${escapeHtml(cat.icon)}</i> 
-        <span style="flex:1; text-align:left;">${escapeHtml(cat.name)}</span>
+      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}" style="display:flex; align-items:center; justify-content:space-between; width:100%; ${inactiveStyle}">
+        <div style="display:flex; align-items:center; gap:10px; flex:1; overflow:hidden;">
+          <i style="flex-shrink:0;">${escapeHtml(cat.icon)}</i> 
+          <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${escapeHtml(cat.name)}</span>
+        </div>
         ${adminButtons}
       </button>`;
   });
   
   if (state.isAdmin) {
-    navHtml += `<button class="cat-item" onclick="handleAddCategoryClick()" style="color:var(--orange);"><i>＋</i> Nueva categoría</button>`;
+    navHtml += `<button class="cat-item" onclick="handleAddCategoryClick()" style="color:var(--orange); margin-top:8px;"><i>＋</i> Nueva categoría</button>`;
   }
   
   nav.innerHTML = navHtml;
