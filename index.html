@@ -982,7 +982,9 @@ async function loadCategories() {
 function renderCategories() {
   const horizontal = document.getElementById('categories-horizontal');
   const nav = document.getElementById('category-nav-list');
+  if (!horizontal || !nav) return;
   const current = state.currentCategory;
+  
   let html = `
     <button class="category-circle ${current === '' ? 'active' : ''}" data-cat="">
       <span class="category-icon">🛍️</span><span>Todos</span>
@@ -995,20 +997,40 @@ function renderCategories() {
       </button>`;
   });
   horizontal.innerHTML = html;
+  
   let navHtml = `
     <button class="cat-item ${current === '' ? 'active' : ''}" data-cat="">
       <i>🏠</i> Todos los productos
     </button>`;
+    
   state.categories.forEach(cat => {
+    const inactiveStyle = (state.isAdmin && cat.is_active === false) ? 'style="opacity:.55;"' : '';
+    
+    // Si es admin, le agregamos los botones al lado
+    let adminButtons = '';
+    if (state.isAdmin && cat.id) {
+      adminButtons = `
+        <div style="margin-left:auto; display:flex; gap:4px;" onclick="event.stopPropagation();">
+          <button onclick="editCategory('${escapeHtml(cat.id)}')" style="background:none; border:none; cursor:pointer; font-size:14px; padding:4px;" title="Editar">✏️</button>
+          <button onclick="deleteCategory('${escapeHtml(cat.id)}', '${escapeHtml(cat.name)}')" style="background:none; border:none; cursor:pointer; font-size:14px; padding:4px;" title="Eliminar">🗑️</button>
+        </div>
+      `;
+    }
+
     navHtml += `
-      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}">
-        <i>${escapeHtml(cat.icon)}</i> ${escapeHtml(cat.name)}
+      <button class="cat-item ${current === cat.name ? 'active' : ''}" data-cat="${escapeHtml(cat.name)}" ${inactiveStyle} style="display:flex; align-items:center; width:100%;">
+        <i>${escapeHtml(cat.icon)}</i> 
+        <span style="flex:1; text-align:left;">${escapeHtml(cat.name)}</span>
+        ${adminButtons}
       </button>`;
   });
+  
   if (state.isAdmin) {
     navHtml += `<button class="cat-item" onclick="handleAddCategoryClick()" style="color:var(--orange);"><i>＋</i> Nueva categoría</button>`;
   }
+  
   nav.innerHTML = navHtml;
+  
   const datalist = document.getElementById('cat-options');
   if (datalist) {
     datalist.innerHTML = state.categories.map(cat => `<option value="${escapeHtml(cat.name)}">`).join('');
