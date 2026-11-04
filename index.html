@@ -2189,28 +2189,44 @@ function renderAdminInventory(pane) {
 }
 
 function renderAdminCategories(pane) {
-  // Leemos las categorías crudas de Supabase para asegurarnos de tener el ID real
+  pane.innerHTML = `<div class="loading-state"><div class="spinner"></div>Cargando categorías...</div>`;
+  
   supabaseClient.from('categories').select('*').order('sort_order').then(({data, error}) => {
     if (error) {
       pane.innerHTML = `<div class="empty-message"><span>⚠️</span><h3>Error al cargar categorías</h3><p>${escapeHtml(error.message)}</p></div>`;
       return;
     }
     
-    // Actualizamos el estado local por si acaso
     const cats = data || [];
     
     const rows = cats.map(c => `
       <tr>
-        <td style="font-size:18px;">${escapeHtml(c.icon || '📦')}</td>
-        <td>${escapeHtml(c.name)}</td>
+        <td style="font-size:24px; text-align:center;">${escapeHtml(c.icon || '📦')}</td>
+        <td><strong>${escapeHtml(c.name)}</strong></td>
         <td>${escapeHtml(c.description || '—')}</td>
-        <td>${c.is_active === false ? '<span style="color:var(--red);">Inactiva</span>' : '<span style="color:var(--green);">Activa</span>'}</td>
+        <td>${c.is_active === false ? '<span class="status-pill status-cancelled">Inactiva</span>' : '<span class="status-pill status-delivered">Activa</span>'}</td>
         <td>${c.sort_order || 0}</td>
-        <td>
+        <td style="white-space:nowrap;">
           <button class="act-btn" onclick="editCategory('${escapeHtml(c.id)}')" title="Editar">✏️ Editar</button>
+          <button class="act-btn danger" onclick="deleteCategory('${escapeHtml(c.id)}', '${escapeHtml(c.name)}')" title="Eliminar" style="color:var(--red);">🗑️</button>
         </td>
       </tr>
     `).join('');
+    
+    pane.innerHTML = `
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h4 style="margin:0; font-size:14px;">Gestión de Categorías</h4>
+        <button class="btn-primary" style="width:auto; margin:0; padding:10px 15px;" onclick="handleAddCategoryClick()">➕ Nueva</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>Icono</th><th>Nombre</th><th>Descripción</th><th>Estado</th><th>Orden</th><th>Acciones</th></tr></thead>
+          <tbody>${rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px;">Sin categorías</td></tr>'}</tbody>
+        </table>
+      </div>
+    `;
+  });
+}
     
     pane.innerHTML = `
       <button class="btn-primary" style="margin-bottom:12px;" onclick="handleAddCategoryClick()">➕ Nueva categoría</button>
