@@ -1929,31 +1929,54 @@ function handleAddCategoryClick() {
 document.getElementById('form-new-cat').addEventListener('submit', async event => {
   event.preventDefault();
   if (!state.isAdmin) return;
+  
+  const btn = document.getElementById('nc-submit-btn');
+  const originalText = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Guardando...';
+
   const name = document.getElementById('nc-name').value.trim();
   const description = document.getElementById('nc-desc').value.trim();
-      let icon = document.getElementById('nc-icon').value.trim();
-    if (!icon) {
-      icon = getCategoryIcon(name); // Si está vacío, detecta automáticamente
-    }
+  let icon = document.getElementById('nc-icon').value.trim();
+  if (!icon && typeof getCategoryIcon === 'function') {
+    icon = getCategoryIcon(name);
+  }
   const sortOrder = parseInt(document.getElementById('nc-order').value) || 0;
   const isActive = document.getElementById('nc-active').checked;
   const existingId = document.getElementById('nc-id').value;
-  if (!name) return;
+  
+  if (!name) { btn.disabled = false; btn.textContent = originalText; return; }
+
   try {
     const payload = { name, description: description || null, icon, sort_order: sortOrder, is_active: isActive };
     let result;
-    if (existingId) result = await supabaseClient.from('categories').update(payload).eq('id', existingId);
-    else result = await supabaseClient.from('categories').insert([payload]);
+    
+    if (existingId) {
+      result = await supabaseClient.from('categories').update(payload).eq('id', existingId);
+    } else {
+      result = await supabaseClient.from('categories').insert([payload]);
+    }
+    
     if (result.error) {
       if (result.error.code === '23505') throw new Error('Esta categoría ya existe.');
       throw result.error;
     }
+    
     showToast(existingId ? 'Categoría actualizada.' : 'Categoría creada.', 'success');
     closeModal('modal-add-category');
     await loadCategories();
     renderCategories();
+    
+    if (document.getElementById('modal-admin-panel').classList.contains('show')) {
+      const pane = document.getElementById('admin-pane-content');
+      renderAdminCategories(pane);
+    }
+    
   } catch (error) {
     showToast(error.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = originalText;
   }
 });
 
