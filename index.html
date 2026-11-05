@@ -2607,6 +2607,161 @@ document.addEventListener('DOMContentLoaded', async () => {
   await fetchProducts();
   if (window.location.hash) setTimeout(handleHashChange, 600);
 });
+/* =====================================================
+   VISTA DE DETALLE DE PRODUCTO
+===================================================== */
+let currentDetailProduct = null;
+let currentDetailImages = [];
+
+async function openProductDetail(productId) {
+  const product = state.products.find(p => String(p.id) === String(productId));
+  if (!product) return;
+  
+  currentDetailProduct = product;
+  
+  // Resetear scroll
+  document.querySelector('.detail-scroll-area').scrollTop = 0;
+  
+  // 1. Cargar datos básicos
+  document.getElementById('detail-category').textContent = product.category || 'General';
+  document.getElementById('detail-title').textContent = product.name;
+  document.getElementById('detail-desc').textContent = product.description || 'Sin descripción detallada.';
+  document.getElementById('spec-category').textContent = product.category || '-';
+  document.getElementById('spec-sku').textContent = product.sku || 'N/A';
+  document.getElementById('spec-stock').textContent = (product.stock || 0) + ' uds';
+  
+  // Precio y oferta
+  const price = getEffectivePrice(product);
+  const salePrice = getSalePrice(product);
+  document.getElementById('detail-price').textContent = 'RD$ ' + formatPrice(price);
+  const oldPriceEl = document.getElementById('detail-price-old');
+  if (salePrice > 0) {
+    oldPriceEl.textContent = 'RD$ ' + formatPrice(product.price);
+    oldPriceEl.classList.remove('hidden');
+  } else {
+    oldPriceEl.classList.add('hidden');
+  }
+  
+  // Badge de stock
+  const stock = Number(product.stock || 0);
+  const badge = document.getElementById('detail-stock-badge');
+  if (stock <= 0) {
+    badge.textContent = 'AGOTADO';
+    badge.style.background = 'rgba(233,75,75,0.1)';
+    badge.style.color = 'var(--red)';
+  } else if (stock < 5) {
+    badge.textContent = 'ÚLTIMAS UNIDADES';
+    badge.style.background = 'rgba(244,169,0,0.1)';
+    badge.style.color = 'var(--yellow)';
+  } else {
+    badge.textContent = 'DISPONIBLE';
+    badge.style.background = 'rgba(18,167,106,0.1)';
+    badge.style.color = 'var(--green)';
+  }
+  
+  // 2. Cargar imágenes
+  const track = document.getElementById('gallery-track');
+  const thumbs = document.getElementById('gallery-thumbs');
+  
+  track.innerHTML = '<div class="loading-state"><div class="spinner"></div></div>';
+  thumbs.innerHTML = '';
+  
+  let images = [];
+  
+  // Intentar cargar múltiples imágenes desde Supabase
+  try {
+    const { data, error } = await supabaseClient
+      .from('product_images')
+      .select('*')
+      .eq('product_id', product.id)
+      .order('orden', { ascending: true });
+    
+    if (!error && data && data.length > 0) {
+      images = data.map(d => d.url);
+    }
+  } catch (e) {
+    console.warn('No se pudo cargar imágenes extra:', e);
+  }
+  
+  // Si no hay imágenes en la tabla nueva, usar la portada del producto
+  if (images.length === 0 && product.image_url) {
+    images = [product.image_url];
+  }
+  
+  // Si sigue vacío, placeholder
+  if (images.length === 0) {
+    images = ['https://placehold.co/600x600/f0f2f5/8992a3?text=Sin+Foto'];
+  }
+  
+  currentDetailImages = images;
+  
+  // Renderizar galería
+  track.innerHTML = images.map(url => `<img src="${escapeHtml(safeImageUrl(url))}" alt="${escapeHtml(product.name)}">`).join('');
+  
+  // Renderizar miniaturas (solo si hay más de 1)
+  if (images.length > 1) {
+    thumbs.innerHTML = images.map((url, i) => `
+      <img class="detail-thumb ${i === 0 ? 'active' : ''}" 
+           src="${escapeHtml(safeImageUrl(url))}" 
+           onclick="scrollToGalleryImage(${i})">
+    `).join('');
+  }
+  
+  // Actualizar badge del carrito en la vista
+  document.getElementById('cart-badge-detail').textContent = document.getElementById('cart-badge').textContent;
+  document.getElementById('cart-badge-detail').classList.toggle('hidden', document.getElementById('cart-badge').classList.contains('hidden'));
+  
+  // 3. Mostrar pantalla
+  document.getElementById('product-detail-view').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeProductDetail() {
+  document.getElementById('product-detail-view').classList.remove('open');
+  if (!document.querySelector('.modal-overlay.show') && !document.getElementById('cart-drawer')?.classList.contains('open')) {
+    document.body.style.overflow = '';
+  }
+  currentDetailProduct = null;
+}
+
+function scrollToGalleryImage(index) {
+  const track = document.getElementById('gallery-track');
+  const imgs = track.querySelectorAll('img');
+  if (imgs[index]) {
+    track.scrollTo({ left: imgs[index].offsetLeft, behavior: 'smooth' });
+  }
+  document.querySelectorAll('.detail-thumb').forEach((t, i) => {
+    t.classList.toggle('active', i === index);
+  });
+}
+
+// Actualizar miniaturas al deslizar
+document.getElementById('gallery-track')?.addEventListener('scroll', (e) => {
+  const track = e.target;
+  const index = Math.round(track.scrollLeft / track.offsetWidth);
+  document.querySelectorAll('.detail-thumb').forEach((t, i) => {
+    t.classList.toggle('active', i === index);
+  });
+});
+
+// Acciones desde el detalle
+function addToCartFromDetail() {
+  if (currentDetailProduct) {
+    addToCart(currentDetailProduct.id, 1, false);
+    // Actualizar badge en el detalle
+    setTimeout(() => {
+      document.getElementById('cart-badge-detail').textContent = document.getElementById('cart-badge').textContent;
+      document.getElementById('cart-badge-detail').classList.remove('hidden');
+    }, 100);
+  }
+}
+
+function startRequestFromDetail() {
+  if (currentDetailProduct) {
+    closeProductDetail();
+    startRequest(currentDetailProduct.id);
+  }
+}
 </script>
 </body>
 </html>
