@@ -2048,37 +2048,29 @@ function compressImage(file, maxWidth = 1000, quality = 0.78) {
 }
 
 /* =====================================================
-   NUEVO PRODUCTO
-===================================================== */
-/* =====================================================
    CONTROL DE DISPONIBILIDAD (STOCK)
 ===================================================== */
-function setStockStatus(status) {
-  const btnAvailable = document.getElementById('btn-stock-available');
-  const btnOut = document.getElementById('btn-stock-out');
-  const hiddenStock = document.getElementById('np-stock');
+function openNewProductModal() {
+  if (!state.isAdmin) { showToast('Acceso restringido.', 'error'); return; }
   
-  if (!btnAvailable || !btnOut || !hiddenStock) return;
+  document.getElementById('form-new-product').reset();
+  document.getElementById('np-id').value = '';
+  document.getElementById('np-file').value = '';
+  document.getElementById('np-preview-img').style.display = 'none';
+  document.getElementById('np-preview-text').style.display = 'block';
+  document.getElementById('new-prod-title').textContent = '➕ Agregar producto';
+  document.getElementById('np-submit-btn').textContent = 'Guardar producto';
+  document.getElementById('np-active').checked = true;
   
-  if (status === 'available') {
-    hiddenStock.value = 10; // Stock alto para que no limite compras
-    btnAvailable.style.border = '2px solid var(--green)';
-    btnAvailable.style.background = 'rgba(18,167,106,0.1)';
-    btnAvailable.style.color = 'var(--green)';
-    
-    btnOut.style.border = '2px solid var(--border)';
-    btnOut.style.background = 'var(--bg)';
-    btnOut.style.color = 'var(--muted)';
-  } else {
-    hiddenStock.value = 0; // Agotado
-    btnOut.style.border = '2px solid var(--red)';
-    btnOut.style.background = 'rgba(233,75,75,0.1)';
-    btnOut.style.color = 'var(--red)';
-    
-    btnAvailable.style.border = '2px solid var(--border)';
-    btnAvailable.style.background = 'var(--bg)';
-    btnAvailable.style.color = 'var(--muted)';
-  }
+  currentImageFile = null;
+  currentMultiFiles = [];
+  document.getElementById('np-multi-preview').innerHTML = '';
+  
+  // AQUÍ ESTÁ EL CAMBIO 4 👇
+  setStockStatus('available'); 
+  // 👆 Esta línea es la que hace que el botón verde se marque por defecto
+  
+  openModal('modal-new-product');
 }
 
 /* =====================================================
