@@ -1878,18 +1878,27 @@ function editProduct(id) {
   if (!state.isAdmin) return;
   const product = state.products.find(item => String(item.id) === String(id));
   if (!product) return;
+  
   document.getElementById('np-id').value = product.id;
   document.getElementById('np-name').value = product.name;
   document.getElementById('np-price').value = product.price;
   document.getElementById('np-sale-price').value = product.sale_price || '';
   document.getElementById('np-category').value = product.category || '';
-  document.getElementById('np-stock').value = product.stock ?? 0;
   document.getElementById('np-sku').value = product.sku || '';
   document.getElementById('np-desc').value = product.description || '';
   document.getElementById('np-supplier').value = product.supplier_whatsapp || '';
   document.getElementById('np-featured').checked = !!product.is_featured;
   document.getElementById('np-active').checked = product.is_active !== false;
   document.getElementById('np-file').value = '';
+  
+  // NUEVO: Detectar y marcar el estado de disponibilidad
+  const currentStock = product.stock ?? 0;
+  document.getElementById('np-stock').value = currentStock;
+  if (currentStock > 0) {
+    setStockStatus('available');
+  } else {
+    setStockStatus('out');
+  }
   
   currentImageFile = null;
   currentMultiFiles = [];
