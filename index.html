@@ -1927,6 +1927,9 @@ Gracias.`;
 /* =====================================================
    SUBIDA DE IMÁGENES
 ===================================================== */
+let currentMultiFiles = [];
+
+// Foto principal
 document.getElementById('np-file').addEventListener('change', event => {
   const file = event.target.files[0];
   if (!file) return;
@@ -1941,6 +1944,24 @@ document.getElementById('np-file').addEventListener('change', event => {
     document.getElementById('np-preview-text').style.display = 'none';
   };
   reader.readAsDataURL(file);
+});
+
+// Fotos adicionales
+document.getElementById('np-multi-files').addEventListener('change', event => {
+  const files = Array.from(event.target.files);
+  currentMultiFiles = files;
+  const preview = document.getElementById('np-multi-preview');
+  preview.innerHTML = '';
+  files.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.style.cssText = 'width:55px; height:55px; object-fit:cover; border-radius:10px; border:2px solid var(--orange);';
+      preview.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
 });
 
 function compressImage(file, maxWidth = 1000, quality = 0.78) {
