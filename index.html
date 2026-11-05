@@ -1874,6 +1874,34 @@ async function logoutAdmin() {
 /* =====================================================
    EDITAR / DESACTIVAR PRODUCTO
 ===================================================== */
+function setStockStatus(status) {
+  const btnAvailable = document.getElementById('btn-stock-available');
+  const btnOut = document.getElementById('btn-stock-out');
+  const hiddenStock = document.getElementById('np-stock');
+  
+  if (!btnAvailable || !btnOut || !hiddenStock) return;
+  
+  if (status === 'available') {
+    hiddenStock.value = 10;
+    btnAvailable.style.border = '2px solid var(--green)';
+    btnAvailable.style.background = 'rgba(18,167,106,0.1)';
+    btnAvailable.style.color = 'var(--green)';
+    
+    btnOut.style.border = '2px solid var(--border)';
+    btnOut.style.background = 'var(--bg)';
+    btnOut.style.color = 'var(--muted)';
+  } else {
+    hiddenStock.value = 0;
+    btnOut.style.border = '2px solid var(--red)';
+    btnOut.style.background = 'rgba(233,75,75,0.1)';
+    btnOut.style.color = 'var(--red)';
+    
+    btnAvailable.style.border = '2px solid var(--border)';
+    btnAvailable.style.background = 'var(--bg)';
+    btnAvailable.style.color = 'var(--muted)';
+  }
+}
+
 function editProduct(id) {
   if (!state.isAdmin) { showToast('Acceso restringido.', 'error'); return; }
   
