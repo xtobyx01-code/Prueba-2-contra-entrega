@@ -472,7 +472,7 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </footer>
 </main>
 
-<!-- MODAL: PEDIDO INDIVIDUAL (compatibilidad) -->
+<!-- MODAL: PEDIDO INDIVIDUAL -->
 <div id="modal-request-order" class="modal-overlay">
   <div class="modal-content">
     <div class="modal-header">
@@ -481,29 +481,29 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
     <div class="modal-body">
       <div class="order-product-summary">
-        <img id="req-prod-image" src="" alt="Producto">
+        <img id="req-prod-image" src="" alt="Producto" style="background:var(--bg);">
         <div class="order-product-info">
           <strong id="req-prod-name">Producto</strong>
-          <span>RD$ <span id="req-prod-price">0.00</span></span>
+          <span id="req-prod-price">RD$ 0.00</span>
         </div>
       </div>
       <div class="cod-payment-notice">
         <div class="notice-icon">💵</div>
-        <div><strong>¡PAGAS CUANDO RECIBAS!</strong><small>No necesitas pagar ahora. El pago se realiza directamente al chofer al momento de la entrega.</small></div>
+        <div><strong>¡PAGAS CUANDO RECIBAS!</strong><small>El pago se realiza directamente al chofer al momento de la entrega.</small></div>
       </div>
       <form id="form-request">
         <input type="hidden" id="req-product-id">
         <div class="form-group"><label class="form-label">Nombre completo *</label><input type="text" id="req-name" class="form-input" required maxlength="100" autocomplete="name" placeholder="Ej: Juan Pérez"></div>
         <div class="form-group"><label class="form-label">Teléfono WhatsApp *</label><input type="tel" id="req-phone" class="form-input" required maxlength="20" autocomplete="tel" placeholder="809, 829 o 849..."></div>
-        <div class="form-group"><label class="form-label">Correo electrónico (opcional)</label><input type="email" id="req-email" class="form-input" maxlength="120" autocomplete="email" placeholder="tucorreo@ejemplo.com"></div>
         <div class="form-group"><label class="form-label">Dirección de entrega *</label><input type="text" id="req-address" class="form-input" required maxlength="200" autocomplete="street-address" placeholder="Calle, sector, municipio..."></div>
-        <div class="form-row">
-          <div class="form-group"><label class="form-label">Zona / Sector *</label><input type="text" id="req-zone" class="form-input" required maxlength="80" placeholder="Ej: Villa Mella"></div>
-          <div class="form-group"><label class="form-label">Referencia</label><input type="text" id="req-address-note" class="form-input" maxlength="120" placeholder="Frente a..."></div>
+        
+        <div class="form-group">
+          <label class="form-label">Cantidad *</label>
+          <input type="number" id="req-qty" class="form-input" required min="1" value="1">
         </div>
-        <div class="form-group"><label class="form-label">Notas del pedido</label><textarea id="req-notes" class="form-input" maxlength="300" placeholder="Indicaciones adicionales..."></textarea></div>
-        <input type="text" id="honeypot-field" tabindex="-1" autocomplete="off" style="position:absolute;left:-9999px;">
-        <button type="submit" class="btn-primary" id="request-submit-btn">📲 Confirmar pedido por WhatsApp</button>
+        
+        <div class="form-group"><label class="form-label">Notas (opcional)</label><textarea id="req-notes" class="form-input" maxlength="300" placeholder="Indicaciones adicionales..."></textarea></div>
+        <button type="submit" class="btn-primary" id="request-submit-btn">📲 Enviar pedido por WhatsApp</button>
         <button type="button" class="btn-secondary" onclick="closeModal('modal-request-order')">Cancelar</button>
       </form>
     </div>
