@@ -1875,59 +1875,71 @@ async function logoutAdmin() {
    EDITAR / DESACTIVAR PRODUCTO
 ===================================================== */
 function editProduct(id) {
-  if (!state.isAdmin) return;
+  if (!state.isAdmin) { showToast('Acceso restringido.', 'error'); return; }
+  
   const product = state.products.find(item => String(item.id) === String(id));
-  if (!product) return;
+  if (!product) { showToast('Producto no encontrado.', 'error'); return; }
   
-  document.getElementById('np-id').value = product.id;
-  document.getElementById('np-name').value = product.name;
-  document.getElementById('np-price').value = product.price;
-  document.getElementById('np-sale-price').value = product.sale_price || '';
-  document.getElementById('np-category').value = product.category || '';
-  document.getElementById('np-sku').value = product.sku || '';
-  document.getElementById('np-desc').value = product.description || '';
-  document.getElementById('np-supplier').value = product.supplier_whatsapp || '';
-  document.getElementById('np-featured').checked = !!product.is_featured;
-  document.getElementById('np-active').checked = product.is_active !== false;
-  document.getElementById('np-file').value = '';
-  
-  // NUEVO: Detectar y marcar el estado de disponibilidad
-  const currentStock = product.stock ?? 0;
-  document.getElementById('np-stock').value = currentStock;
-  if (currentStock > 0) {
-    setStockStatus('available');
-  } else {
-    setStockStatus('out');
-  }
-  
-  currentImageFile = null;
-  currentMultiFiles = [];
-  document.getElementById('np-multi-preview').innerHTML = '';
-  
-  const preview = document.getElementById('np-preview-img');
-  const previewText = document.getElementById('np-preview-text');
-  if (product.image_url) {
-    preview.src = product.image_url;
-    preview.style.display = 'block';
-    previewText.style.display = 'none';
-  } else {
-    preview.style.display = 'none';
-    previewText.style.display = 'block';
-  }
-  
-  // Cargar fotos adicionales existentes si las hay
-  supabaseClient.from('product_images').select('*').eq('product_id', id).order('orden').then(({data}) => {
-    if (data && data.length > 0) {
-      const previewContainer = document.getElementById('np-multi-preview');
-      previewContainer.innerHTML = data.map(img => `
-        <img src="${escapeHtml(safeImageUrl(img.url))}" style="width:55px; height:55px; object-fit:cover; border-radius:10px; border:1px solid var(--border);">
-      `).join('');
+  try {
+    // 1. Llenar los campos básicos
+    document.getElementById('np-id').value = product.id;
+    document.getElementById('np-name').value = product.name || '';
+    document.getElementById('np-price').value = product.price || '';
+    document.getElementById('np-sale-price').value = product.sale_price || '';
+    document.getElementById('np-category').value = product.category || '';
+    document.getElementById('np-sku').value = product.sku || '';
+    document.getElementById('np-desc').value = product.description || '';
+    document.getElementById('np-supplier').value = product.supplier_whatsapp || '';
+    document.getElementById('np-featured').checked = !!product.is_featured;
+    document.getElementById('np-active').checked = product.is_active !== false;
+    document.getElementById('np-file').value = '';
+    
+    // 2. Detectar y marcar el estado de disponibilidad (convertimos a número para evitar errores)
+    const currentStock = Number(product.stock) || 0;
+    if (currentStock > 0) {
+      setStockStatus('available');
+    } else {
+      setStockStatus('out');
     }
-  });
+    
+    // 3. Limpiar archivos de imagen
+    currentImageFile = null;
+    currentMultiFiles = [];
+    document.getElementById('np-multi-preview').innerHTML = '';
+    
+    // 4. Mostrar foto principal
+    const preview = document.getElementById('np-preview-img');
+    const previewText = document.getElementById('np-preview-text');
+    if (product.image_url) {
+      preview.src = safeImageUrl(product.image_url);
+      preview.style.display = 'block';
+      previewText.style.display = 'none';
+    } else {
+      preview.style.display = 'none';
+      previewText.style.display = 'block';
+    }
+    
+    // 5. Cargar fotos adicionales
+    supabaseClient.from('product_images').select('*').eq('product_id', id).order('orden').then(({data}) => {
+      if (data && data.length > 0) {
+        const previewContainer = document.getElementById('np-multi-preview');
+        previewContainer.innerHTML = data.map(img => `
+          <img src="${escapeHtml(safeImageUrl(img.url))}" style="width:55px; height:55px; object-fit:cover; border-radius:10px; border:1px solid var(--border);">
+        `).join('');
+      }
+    });
 
-  document.getElementById('new-prod-title').textContent = '✏️ Editar producto';
-  document.getElementById('np-submit-btn').textContent = 'Actualizar producto';
-  openModal('modal-new-product');
+    // 6. Cambiar textos del modal
+    document.getElementById('new-prod-title').textContent = '✏️ Editar producto';
+    document.getElementById('np-submit-btn').textContent = 'Actualizar producto';
+    
+    // 7. Abrir el modal
+    openModal('modal-new-product');
+    
+  } catch (e) {
+    console.error('Error al abrir edición:', e);
+    showToast('Error al abrir el formulario: ' + e.message, 'error');
+  }
 }
 
 async function deleteProduct(id) {
@@ -1939,10 +1951,8 @@ async function deleteProduct(id) {
   if (!confirm(`¿Estás SEGURO de que quieres ELIMINAR PERMANENTEMENTE "${product.name}"?\n\nEsta acción no se puede deshacer y el producto desaparecerá de la base de datos.`)) return;
   
   try {
-    // Borramos primero las imágenes adicionales
     await supabaseClient.from('product_images').delete().eq('product_id', id);
     
-    // Luego borramos el producto
     const { error } = await supabaseClient.from('products').delete().eq('id', id);
     if (error) throw error;
     
