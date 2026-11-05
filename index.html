@@ -678,7 +678,49 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     </div>
   </div>
 </div>
-
+<div id="product-detail-view" class="product-detail-screen">
+  <div class="product-detail-header">
+    <button class="btn-back-detail" onclick="closeProductDetail()">←</button>
+    <button class="icon-button" onclick="toggleCart(true)" style="pointer-events:auto;">
+      🛒<span id="cart-badge-detail" class="cart-badge hidden">0</span>
+    </button>
+  </div>
+  
+  <div class="detail-scroll-area">
+    <div class="detail-gallery">
+      <div id="gallery-track" class="gallery-track"></div>
+    </div>
+    <div id="gallery-thumbs" class="detail-thumbnails"></div>
+    
+    <div class="detail-info">
+      <div id="detail-category" class="detail-category"></div>
+      <h1 id="detail-title" class="detail-title"></h1>
+      
+      <div class="detail-price-wrap">
+        <span id="detail-price" class="detail-price"></span>
+        <span id="detail-price-old" class="detail-price-old hidden"></span>
+      </div>
+      
+      <span id="detail-stock-badge" class="detail-stock-badge"></span>
+      
+      <div class="detail-desc-title">Descripción</div>
+      <p id="detail-desc" class="detail-desc"></p>
+      
+      <div class="detail-desc-title">Especificaciones</div>
+      <div class="detail-specs-grid">
+        <div class="detail-spec-card"><small>Categoría</small><strong id="spec-category"></strong></div>
+        <div class="detail-spec-card"><small>SKU</small><strong id="spec-sku"></strong></div>
+        <div class="detail-spec-card"><small>Stock</small><strong id="spec-stock"></strong></div>
+        <div class="detail-spec-card"><small>Pago</small><strong>Contra Entrega</strong></div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="detail-actions">
+    <button class="btn-detail-cart" onclick="addToCartFromDetail()">🛒</button>
+    <button class="btn-detail-buy" onclick="startRequestFromDetail()">📲 SOLICITAR PEDIDO</button>
+  </div>
+</div>
 <div id="toast-notification" class="toast"></div>
 <script>
 /* =====================================================
