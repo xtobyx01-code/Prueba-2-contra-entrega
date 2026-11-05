@@ -579,44 +579,53 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
     <div class="modal-body">
       <form id="form-new-product">
         <input type="hidden" id="np-id">
+        
         <div class="form-group">
-          <label class="form-label">Fotografía del producto *</label>
+          <label class="form-label">Fotografía Principal *</label>
           <input type="file" id="np-file" accept="image/*" hidden>
           <div id="np-preview-container" class="image-upload-area" onclick="document.getElementById('np-file').click()">
-            <span id="np-preview-text">📷 Toca aquí para subir una fotografía</span>
+            <span id="np-preview-text">📷 Toca aquí para subir la foto principal</span>
             <img id="np-preview-img" src="" alt="Vista previa" style="display:none;">
           </div>
-          <div class="form-group" id="np-multi-images-group">
-  <label class="form-label">Fotos adicionales (opcional)</label>
-  <input type="file" id="np-multi-files" accept="image/*" multiple hidden>
-  <div class="image-upload-area" onclick="document.getElementById('np-multi-files').click()" style="height:80px;">
-    <span>📷 Toca para añadir fotos (frente, lateral, trasera...)</span>
-  </div>
-  <div id="np-multi-preview" style="display:flex; gap:8px; overflow-x:auto; margin-top:10px;"></div>
-  <small style="color:var(--muted);font-size:10px;">Se guardarán como galería del producto.</small>
-</div>
-          <small style="color:var(--muted);font-size:10px;">Las imágenes se optimizan automáticamente.</small>
         </div>
+
+        <div class="form-group">
+          <label class="form-label">Fotos Adicionales (Opcional)</label>
+          <input type="file" id="np-multi-files" accept="image/*" multiple hidden>
+          <div class="image-upload-area" onclick="document.getElementById('np-multi-files').click()" style="height:80px;">
+            <span>📷 Añadir más fotos (frente, lateral, trasera...)</span>
+          </div>
+          <div id="np-multi-preview" style="display:flex; gap:8px; overflow-x:auto; margin-top:10px;"></div>
+        </div>
+
         <div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="np-name" class="form-input" required maxlength="150"></div>
+        
         <div class="form-row">
           <div class="form-group"><label class="form-label">Precio RD$ *</label><input type="number" id="np-price" class="form-input" required min="0.01" step="0.01"></div>
           <div class="form-group"><label class="form-label">Precio oferta</label><input type="number" id="np-sale-price" class="form-input" min="0" step="0.01" placeholder="Opcional"></div>
         </div>
+        
         <div class="form-row">
           <div class="form-group"><label class="form-label">Categoría *</label><input type="text" id="np-category" class="form-input" required list="cat-options" placeholder="Ej: Electrónica"><datalist id="cat-options"></datalist></div>
           <div class="form-group"><label class="form-label">Stock</label><input type="number" id="np-stock" class="form-input" min="0" value="1"></div>
         </div>
-        <div class="form-group"><label class="form-label">SKU</label><input type="text" id="np-sku" class="form-input" maxlength="60" placeholder="Opcional"></div>
+        
+        <div class="form-group"><label class="form-label">SKU (Opcional - se genera solo)</label><input type="text" id="np-sku" class="form-input" maxlength="60" placeholder="Dejar vacío para automático"></div>
+        
         <div class="form-group"><label class="form-label">Descripción</label><textarea id="np-desc" class="form-input" maxlength="1000"></textarea></div>
+        
         <div class="form-group"><label class="form-label">WhatsApp del proveedor</label><input type="tel" id="np-supplier" class="form-input" placeholder="+1809..."></div>
+        
         <div class="form-group" style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="np-featured" style="width:auto;">
           <label for="np-featured" class="form-label" style="margin:0;">Producto destacado</label>
         </div>
+        
         <div class="form-group" style="display:flex;align-items:center;gap:8px;">
           <input type="checkbox" id="np-active" checked style="width:auto;">
           <label for="np-active" class="form-label" style="margin:0;">Producto activo (visible en tienda)</label>
         </div>
+        
         <button type="submit" class="btn-primary" id="np-submit-btn">Guardar producto</button>
         <button type="button" class="btn-secondary" onclick="closeModal('modal-new-product')">Cancelar</button>
       </form>
