@@ -2862,10 +2862,50 @@ function addToCartFromDetail() {
 }
 
 function startRequestFromDetail() {
-  if (currentDetailProduct) {
-    closeProductDetail();
-    startRequest(currentDetailProduct.id);
+  if (!currentDetailProduct) return;
+  
+  // 1. Verificamos el WhatsApp del proveedor
+  const supplierPhone = String(currentDetailProduct.supplier_whatsapp || '').replace(/\D/g, '');
+  if (!supplierPhone) {
+    showToast('Este producto no tiene un WhatsApp de proveedor configurado.', 'error');
+    return;
   }
+
+  // 2. Si es ADMIN: abrimos WhatsApp directo sin formulario
+  if (state.isAdmin) {
+    const productUrl = `${window.location.origin}${window.location.pathname}?producto=${currentDetailProduct.id}`;
+    const message = `Hola, quiero pedir: ${currentDetailProduct.name}. Link: ${productUrl}`;
+    const waLink = `https://wa.me/${supplierPhone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(waLink, '_blank');
+    return;
+  }
+  
+  // 3. Si es CLIENTE: llenamos el formulario y lo abrimos
+  document.getElementById('req-product-id').value = currentDetailProduct.id;
+  document.getElementById('req-prod-name').textContent = currentDetailProduct.name;
+  document.getElementById('req-prod-price').textContent = 'RD$ ' + formatPrice(getEffectivePrice(currentDetailProduct));
+  document.getElementById('req-prod-image').src = safeImageUrl(currentDetailProduct.image_url) || 'https://placehold.co/200x200/f0f2f5/8992a3?text=Producto';
+  
+  // Configurar cantidad máxima según el stock
+  const qtyInput = document.getElementById('req-qty');
+  if (qtyInput) {
+    qtyInput.max = currentDetailProduct.stock || 1;
+    qtyInput.value = 1;
+  }
+  
+  // Limpiar formulario antes de mostrar
+  document.getElementById('form-request').reset();
+  
+  // Restaurar valores tras el reset
+  if (qtyInput) {
+    qtyInput.value = 1;
+    qtyInput.max = currentDetailProduct.stock || 1;
+  }
+
+  // Cerramos la vista de detalle y abrimos el modal
+  closeProductDetail();
+  openModal('modal-request-order');
 }
 </script>
 </body>
