@@ -1865,7 +1865,11 @@ function editProduct(id) {
   document.getElementById('np-featured').checked = !!product.is_featured;
   document.getElementById('np-active').checked = product.is_active !== false;
   document.getElementById('np-file').value = '';
+  
   currentImageFile = null;
+  currentMultiFiles = [];
+  document.getElementById('np-multi-preview').innerHTML = '';
+  
   const preview = document.getElementById('np-preview-img');
   const previewText = document.getElementById('np-preview-text');
   if (product.image_url) {
@@ -1876,6 +1880,17 @@ function editProduct(id) {
     preview.style.display = 'none';
     previewText.style.display = 'block';
   }
+  
+  // Cargar fotos adicionales existentes si las hay
+  supabaseClient.from('product_images').select('*').eq('product_id', id).order('orden').then(({data}) => {
+    if (data && data.length > 0) {
+      const previewContainer = document.getElementById('np-multi-preview');
+      previewContainer.innerHTML = data.map(img => `
+        <img src="${escapeHtml(safeImageUrl(img.url))}" style="width:55px; height:55px; object-fit:cover; border-radius:10px; border:1px solid var(--border);">
+      `).join('');
+    }
+  });
+
   document.getElementById('new-prod-title').textContent = '✏️ Editar producto';
   document.getElementById('np-submit-btn').textContent = 'Actualizar producto';
   openModal('modal-new-product');
@@ -1883,16 +1898,25 @@ function editProduct(id) {
 
 async function deleteProduct(id) {
   if (!state.isAdmin) return;
+  
   const product = state.products.find(item => String(item.id) === String(id));
   if (!product) return;
-  if (!confirm(`¿Desactivar "${product.name}"?\n\nEl producto dejará de mostrarse en la tienda pero se conserva en el historial de pedidos.`)) return;
+  
+  if (!confirm(`¿Estás SEGURO de que quieres ELIMINAR PERMANENTEMENTE "${product.name}"?\n\nEsta acción no se puede deshacer y el producto desaparecerá de la base de datos.`)) return;
+  
   try {
-    const { error } = await supabaseClient.from('products').update({ is_active: false }).eq('id', id);
+    // Borramos primero las imágenes adicionales
+    await supabaseClient.from('product_images').delete().eq('product_id', id);
+    
+    // Luego borramos el producto
+    const { error } = await supabaseClient.from('products').delete().eq('id', id);
     if (error) throw error;
-    showToast('Producto desactivado.', 'success');
+    
+    showToast('Producto eliminado permanentemente.', 'success');
     await fetchProducts();
   } catch (error) {
-    showToast('Error: ' + error.message, 'error');
+    console.error(error);
+    showToast('Error al eliminar: ' + error.message, 'error');
   }
 }
 
