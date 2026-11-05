@@ -1264,7 +1264,7 @@ function createProductCard(product) {
         <h3 class="card-title" style="color:var(--text);">${escapeHtml(product.name)}</h3>
         ${hasSale ? `<div class="card-price-old">RD$ ${formatPrice(product.price)}</div>` : ''}
         <div class="card-price">RD$ ${formatPrice(effective)}</div>
-        <div class="card-stock-info">${out ? 'Producto agotado' : stock + ' unidades disponibles'}</div>
+                <div class="card-stock-info" style="display:none;">${out ? 'Producto agotado' : stock + ' unidades disponibles'}</div>
         <div class="card-actions">
           <button class="btn-request" ${out ? 'disabled' : ''} onclick="startRequest('${escapeHtml(product.id)}')">
             ${out ? 'NO DISPONIBLE' : '📲 SOLICITAR'}
