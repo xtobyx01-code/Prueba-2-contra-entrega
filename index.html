@@ -1451,7 +1451,9 @@ document.getElementById('form-request').addEventListener('submit', async event =
     // Mensaje para WhatsApp del proveedor
     const message = `Hola, quiero pedir: ${product.name} (x${qty}, RD$ ${formatPrice(totalPrice)}). Nombre: ${name}. Teléfono: ${phone}. Entrega: ${address}. Notas: ${notes || 'ninguna'}. Link: ${productUrl}`;
     
-    const waLink = `https://wa.me/${supplierPhone}?text=${encodeURIComponent(message)}`;
+    const storePhone = getWhatsAppNumber();
+const finalPhone = storePhone || supplierPhone; // Si no hay número de tienda, usa el del proveedor
+const waLink = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
     
     // Abrimos WhatsApp del proveedor
     window.open(waLink, '_blank');
@@ -1597,6 +1599,11 @@ document.getElementById('form-checkout').addEventListener('submit', async event 
     }
 
     const waNumber = getWhatsAppNumber();
+    const waNumber = getWhatsAppNumber();
+if (!waNumber) {
+  showToast('La tienda no tiene un WhatsApp configurado.', 'error');
+  return;
+}
     const itemsText = details.map(d => `  • ${d.product.name} ×${d.qty} — RD$ ${formatPrice(d.lineTotal)}`).join('\n');
     const message =
 `*NUEVO PEDIDO — PAGO CONTRA ENTREGA*
