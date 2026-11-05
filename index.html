@@ -2114,7 +2114,10 @@ document.getElementById('form-new-product').addEventListener('submit', async eve
     const salePriceRaw = document.getElementById('np-sale-price').value.trim();
     const salePrice = salePriceRaw ? parseFloat(salePriceRaw) : null;
     const category = document.getElementById('np-category').value.trim();
+    
+    // CORRECCIÓN: Leer el stock del input oculto
     const stock = parseInt(document.getElementById('np-stock').value) || 0;
+    
     let sku = document.getElementById('np-sku').value.trim();
     const description = document.getElementById('np-desc').value.trim();
     const supplier = document.getElementById('np-supplier').value.trim();
