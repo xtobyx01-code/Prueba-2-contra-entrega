@@ -2977,7 +2977,8 @@ function startRequestFromDetail() {
 
   // 2. Si es ADMIN: abrimos WhatsApp directo sin formulario
   if (state.isAdmin) {
-    const productUrl = `${window.location.origin}${window.location.pathname}?producto=${currentDetailProduct.id}`;
+    const baseUrl = window.location.href.split('?')[0]; 
+    const productUrl = `${baseUrl}?producto=${currentDetailProduct.id}`;
     const message = `Hola, quiero pedir: ${currentDetailProduct.name}. Link: ${productUrl}`;
     const waLink = `https://wa.me/${supplierPhone}?text=${encodeURIComponent(message)}`;
     
