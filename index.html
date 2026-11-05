@@ -607,7 +607,19 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
         
         <div class="form-row">
           <div class="form-group"><label class="form-label">Categoría *</label><input type="text" id="np-category" class="form-input" required list="cat-options" placeholder="Ej: Electrónica"><datalist id="cat-options"></datalist></div>
-          <div class="form-group"><label class="form-label">Stock</label><input type="number" id="np-stock" class="form-input" min="0" value="1"></div>
+          
+          <div class="form-group">
+            <label class="form-label">Disponibilidad</label>
+            <input type="number" id="np-stock" value="10" hidden>
+            <div style="display:flex; gap:6px;">
+              <button type="button" id="btn-stock-available" onclick="setStockStatus('available')" style="flex:1; padding:12px 4px; border-radius:11px; border:2px solid var(--green); background:rgba(18,167,106,0.1); color:var(--green); font-weight:800; font-size:11px;">
+                ✅ Disponible
+              </button>
+              <button type="button" id="btn-stock-out" onclick="setStockStatus('out')" style="flex:1; padding:12px 4px; border-radius:11px; border:2px solid var(--border); background:var(--bg); color:var(--muted); font-weight:800; font-size:11px;">
+                ❌ Agotado
+              </button>
+            </div>
+          </div>
         </div>
         
         <div class="form-group"><label class="form-label">SKU (Opcional - se genera solo)</label><input type="text" id="np-sku" class="form-input" maxlength="60" placeholder="Dejar vacío para automático"></div>
