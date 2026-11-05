@@ -1373,6 +1373,54 @@ async function insertOrderRobust(baseData) {
 }
 
 /* =====================================================
+   INSERCIÓN ROBUSTA DE PEDIDOS
+===================================================== */
+async function insertOrderRobust(baseData) {
+  const tryInsert = async (payload) => {
+    const { error } = await supabaseClient.from('web_orders').insert([payload]);
+    return error ? { ok: false, error } : { ok: true };
+  };
+
+  const attempt1 = { ...baseData, items: JSON.stringify(baseData.items || []) };
+  let r = await tryInsert(attempt1);
+  if (r.ok) return { ok: true };
+
+  const firstErr = r.error;
+
+  const attempt2 = { ...attempt1 };
+  delete attempt2.order_number;
+  r = await tryInsert(attempt2);
+  if (r.ok) return { ok: true };
+
+  const attempt3 = { ...attempt2, status: 'nuevo' };
+  r = await tryInsert(attempt3);
+  if (r.ok) return { ok: true };
+
+  const attempt4 = { ...attempt2, items: baseData.items || [] };
+  r = await tryInsert(attempt4);
+  if (r.ok) return { ok: true };
+
+  const attempt5 = { ...attempt2, status: 'nuevo', items: baseData.items || [] };
+  r = await tryInsert(attempt5);
+  if (r.ok) return { ok: true };
+
+  const attempt6 = {
+    order_code: baseData.order_code,
+    product_id: baseData.product_id || null,
+    product_name_snapshot: baseData.product_name_snapshot || null,
+    product_price_snapshot: baseData.product_price_snapshot || null,
+    customer_name: baseData.customer_name,
+    customer_phone: baseData.customer_phone,
+    address_note: baseData.customer_address + (baseData.delivery_zone ? ' | Zona: ' + baseData.delivery_zone : ''),
+    status: 'nuevo'
+  };
+  r = await tryInsert(attempt6);
+  if (r.ok) return { ok: true };
+
+  return { ok: false, error: r.error || firstErr };
+}
+
+/* =====================================================
    PEDIDO INDIVIDUAL
 ===================================================== */
 function startRequest(productId) {
@@ -1380,7 +1428,6 @@ function startRequest(productId) {
   if (!product) return;
   if (Number(product.stock) <= 0) { showToast('Este producto está agotado.', 'error'); return; }
   
-  // Si el producto no tiene proveedor, avisamos y salimos
   const supplierPhone = String(product.supplier_whatsapp || '').replace(/\D/g, '');
   if (!supplierPhone) {
     showToast('Este producto no tiene un WhatsApp de proveedor configurado.', 'error');
@@ -1391,6 +1438,103 @@ function startRequest(productId) {
   document.getElementById('req-prod-name').textContent = product.name;
   document.getElementById('req-prod-price').textContent = 'RD$ ' + formatPrice(getEffectivePrice(product));
   document.getElementById('req-prod-image').src = safeImageUrl(product.image_url) || 'https://placehold.co/200x200/f0f2f5/8992a3?text=Producto';
+  
+  const qtyInput = document.getElementById('req-qty');
+  if (qtyInput) {
+    qtyInput.max = product.stock || 1;
+    qtyInput.value = 1;
+  }
+
+  document.getElementById('form-request').reset();
+  if (qtyInput) { qtyInput.value = 1; qtyInput.max = product.stock || 1; }
+  
+  openModal('modal-request-order');
+}
+
+document.getElementById('form-request').addEventListener('submit', async event => {
+  event.preventDefault();
+  if (state.submitLocks.single) return;
+  
+  const button = document.getElementById('request-submit-btn');
+  const name = document.getElementById('req-name').value.trim();
+  const phoneRaw = document.getElementById('req-phone').value.trim();
+  const address = document.getElementById('req-address').value.trim();
+  const notes = document.getElementById('req-notes').value.trim();
+  const qty = parseInt(document.getElementById('req-qty').value) || 1;
+  const productId = document.getElementById('req-product-id').value;
+  const phone = normalizePhoneRD(phoneRaw);
+
+  if (!name) { showToast('Por favor, escribe tu nombre completo.', 'error'); return; }
+  if (!phone) { showToast('Introduce un teléfono dominicano válido.', 'error'); return; }
+  if (!address) { showToast('Por favor, escribe tu dirección de entrega.', 'error'); return; }
+
+  const product = state.products.find(item => String(item.id) === String(productId));
+  if (!product) { showToast('Producto no encontrado.', 'error'); return; }
+  
+  if (qty > Number(product.stock || 0)) {
+    showToast(`Solo hay ${product.stock} unidades disponibles.`, 'error');
+    return;
+  }
+
+  // Lógica: Si la tienda tiene número configurado, va a la tienda. Si no, al proveedor.
+  const storePhone = getWhatsAppNumber();
+  const supplierPhone = String(product.supplier_whatsapp || '').replace(/\D/g, '');
+  const finalPhone = storePhone || supplierPhone;
+
+  if (!finalPhone) {
+    showToast('No hay un número de WhatsApp configurado para esta tienda.', 'error');
+    return;
+  }
+
+  state.submitLocks.single = true;
+  button.disabled = true;
+  button.textContent = 'Preparando pedido...';
+
+  try {
+    const orderCode = generateOrderCode();
+    const unitPrice = getEffectivePrice(product);
+    const totalPrice = unitPrice * qty;
+    const productUrl = `${window.location.href.split('?')[0]}?producto=${product.id}`;
+    
+    const message = `Hola, quiero pedir: ${product.name} (x${qty}, RD$ ${formatPrice(totalPrice)}). Nombre: ${name}. Teléfono: ${phone}. Entrega: ${address}. Notas: ${notes || 'ninguna'}. Link: ${productUrl}`;
+    const waLink = `https://wa.me/${finalPhone}?text=${encodeURIComponent(message)}`;
+    
+    window.open(waLink, '_blank');
+    closeModal('modal-request-order');
+    showToast('Pedido preparado. Abriendo WhatsApp...', 'success');
+
+    const items = [{ product_id: product.id, name: product.name, price: unitPrice, qty: qty, image_url: product.image_url || null }];
+    const orderData = {
+      order_number: orderCode,
+      order_code: orderCode,
+      product_id: product.id,
+      product_name_snapshot: product.name,
+      product_price_snapshot: unitPrice,
+      customer_name: name,
+      customer_phone: phone,
+      customer_address: address,
+      delivery_zone: 'No especificado',
+      delivery_fee: 0,
+      subtotal: totalPrice,
+      total: totalPrice,
+      items: items,
+      notes: notes || null,
+      payment_method: 'cash_on_delivery',
+      payment_status: 'pending',
+      status: 'pending'
+    };
+
+    try { await insertOrderRobust(orderData); } catch (dbError) { console.warn('No se guardó en DB:', dbError); }
+
+  } catch (error) {
+    console.error(error);
+    showToast(error.message, 'error');
+  } finally {
+    state.submitLocks.single = false;
+    button.disabled = false;
+    button.textContent = '📲 Enviar pedido por WhatsApp';
+  }
+});
   
   // Configurar cantidad máxima
   const qtyInput = document.getElementById('req-qty');
