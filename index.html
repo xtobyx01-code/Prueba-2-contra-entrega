@@ -1229,9 +1229,9 @@ function createProductCard(product) {
         ${hasSale ? '<span class="badge-sale">OFERTA</span>' : ''}
         <span class="cod-badge">💵 PAGA AL RECIBIR</span>
       </div>
-      <div class="card-info">
+            <div class="card-info" onclick="openProductDetail('${escapeHtml(product.id)}')" style="cursor:pointer;">
         <div class="card-category">${escapeHtml(product.category || 'General')}</div>
-        <h3 class="card-title">${escapeHtml(product.name)}</h3>
+        <h3 class="card-title" style="color:var(--text);">${escapeHtml(product.name)}</h3>
         ${hasSale ? `<div class="card-price-old">RD$ ${formatPrice(product.price)}</div>` : ''}
         <div class="card-price">RD$ ${formatPrice(effective)}</div>
         <div class="card-stock-info">${out ? 'Producto agotado' : stock + ' unidades disponibles'}</div>
