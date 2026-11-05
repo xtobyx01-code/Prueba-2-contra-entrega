@@ -586,6 +586,15 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
             <span id="np-preview-text">📷 Toca aquí para subir una fotografía</span>
             <img id="np-preview-img" src="" alt="Vista previa" style="display:none;">
           </div>
+          <div class="form-group" id="np-multi-images-group">
+  <label class="form-label">Fotos adicionales (opcional)</label>
+  <input type="file" id="np-multi-files" accept="image/*" multiple hidden>
+  <div class="image-upload-area" onclick="document.getElementById('np-multi-files').click()" style="height:80px;">
+    <span>📷 Toca para añadir fotos (frente, lateral, trasera...)</span>
+  </div>
+  <div id="np-multi-preview" style="display:flex; gap:8px; overflow-x:auto; margin-top:10px;"></div>
+  <small style="color:var(--muted);font-size:10px;">Se guardarán como galería del producto.</small>
+</div>
           <small style="color:var(--muted);font-size:10px;">Las imágenes se optimizan automáticamente.</small>
         </div>
         <div class="form-group"><label class="form-label">Nombre *</label><input type="text" id="np-name" class="form-input" required maxlength="150"></div>
