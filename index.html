@@ -2920,6 +2920,16 @@ function startRequestFromDetail() {
   closeProductDetail();
   openModal('modal-request-order');
 }
+// Abrir producto desde URL (?producto=ID)
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    const params = new URLSearchParams(window.location.search);
+    const productId = params.get('producto');
+    if (productId) {
+      openProductDetail(productId);
+    }
+  }, 1200);
+});
 </script>
 </body>
 </html>
