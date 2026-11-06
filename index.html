@@ -1380,10 +1380,10 @@ function startRequest(productId) {
   if (!product) return;
   if (Number(product.stock) <= 0) { showToast('Este producto está agotado.', 'error'); return; }
   
-  // Si el producto no tiene proveedor, avisamos y salimos
-  const supplierPhone = String(product.supplier_whatsapp || '').replace(/\D/g, '');
-  if (!supplierPhone) {
-    showToast('Este producto no tiene un WhatsApp de proveedor configurado.', 'error');
+  // Verificar que la tienda tenga WhatsApp configurado en Supabase
+  const storePhone = getWhatsAppNumber();
+  if (!storePhone) {
+    showToast('La tienda no tiene un número de WhatsApp configurado.', 'error');
     return;
   }
 
@@ -1431,10 +1431,10 @@ document.getElementById('form-request').addEventListener('submit', async event =
     return;
   }
 
-  // Número de WhatsApp del proveedor
-  const supplierPhone = String(product.supplier_whatsapp || '').replace(/\D/g, '');
-  if (!supplierPhone) {
-    showToast('Este producto no tiene un WhatsApp de proveedor configurado.', 'error');
+  // Obtener el número de WhatsApp de la tienda desde Supabase
+  const storePhone = getWhatsAppNumber();
+  if (!storePhone) {
+    showToast('La tienda no tiene un número de WhatsApp configurado.', 'error');
     return;
   }
 
@@ -1446,21 +1446,20 @@ document.getElementById('form-request').addEventListener('submit', async event =
     const orderCode = generateOrderCode();
     const unitPrice = getEffectivePrice(product);
     const totalPrice = unitPrice * qty;
-    const productUrl = `${window.location.origin}${window.location.pathname}?producto=${product.id}`;
+    const productUrl = `${window.location.href.split('?')[0]}?producto=${product.id}`;
     
-    // Mensaje para WhatsApp del proveedor
+    // Mensaje de WhatsApp
     const message = `Hola, quiero pedir: ${product.name} (x${qty}, RD$ ${formatPrice(totalPrice)}). Nombre: ${name}. Teléfono: ${phone}. Entrega: ${address}. Notas: ${notes || 'ninguna'}. Link: ${productUrl}`;
     
-    const waLink = `https://wa.me/${supplierPhone}?text=${encodeURIComponent(message)}`;
+    // Abrir WhatsApp de la tienda
+    const waLink = `https://wa.me/${storePhone}?text=${encodeURIComponent(message)}`;
     
-    // Abrimos WhatsApp del proveedor
     window.open(waLink, '_blank');
     
-    // Cerramos modal y mostramos aviso
     closeModal('modal-request-order');
-    showToast('Pedido preparado. Abriendo WhatsApp del proveedor...', 'success');
+    showToast('Pedido preparado. Abriendo WhatsApp de la tienda...', 'success');
 
-    // Guardamos en Supabase como respaldo (silenciosamente)
+    // Guardar en Supabase como respaldo
     const items = [{
       product_id: product.id,
       name: product.name,
@@ -1488,6 +1487,22 @@ document.getElementById('form-request').addEventListener('submit', async event =
       payment_status: 'pending',
       status: 'pending'
     };
+
+    try {
+      await insertOrderRobust(orderData);
+    } catch (dbError) {
+      console.warn('No se pudo guardar el pedido en Supabase:', dbError);
+    }
+
+  } catch (error) {
+    console.error(error);
+    showToast(error.message, 'error');
+  } finally {
+    state.submitLocks.single = false;
+    button.disabled = false;
+    button.textContent = '📲 Enviar pedido por WhatsApp';
+  }
+});
 
     // Intentar guardar el pedido, pero no bloquear si falla
     try {
