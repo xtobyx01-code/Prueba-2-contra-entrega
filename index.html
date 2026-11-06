@@ -1504,23 +1504,6 @@ document.getElementById('form-request').addEventListener('submit', async event =
   }
 });
 
-    // Intentar guardar el pedido, pero no bloquear si falla
-    try {
-      await insertOrderRobust(orderData);
-    } catch (dbError) {
-      console.warn('No se pudo guardar el pedido en Supabase:', dbError);
-    }
-
-  } catch (error) {
-    console.error(error);
-    showToast(error.message, 'error');
-  } finally {
-    state.submitLocks.single = false;
-    button.disabled = false;
-    button.textContent = '📲 Enviar pedido por WhatsApp';
-  }
-});
-
 /* =====================================================
    CHECKOUT CARRITO
 ===================================================== */
