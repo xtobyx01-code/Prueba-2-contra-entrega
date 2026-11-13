@@ -2596,6 +2596,14 @@ function contactOrderCustomer(orderId) {
 }
 
 function renderAdminInventory(pane) {
+    // Botón de importación masiva
+  pane.innerHTML = `
+    <button class="btn-primary" style="margin-bottom: 15px; background: var(--navy);" onclick="document.getElementById('zip-import-input').click()">
+      📦 Importar ZIP de Productos
+    </button>
+    <input type="file" id="zip-import-input" accept=".zip" hidden onchange="handleZipUpload(event)">
+    <div id="zip-preview-area" style="margin-bottom: 20px;"></div>
+  `;
   if (!state.products.length) {
     pane.innerHTML = `<div class="empty-message"><span>📦</span><h3>Sin productos</h3></div>`;
     return;
