@@ -2690,6 +2690,37 @@ function handleHashChange() {
 /* =====================================================
    PANEL ADMIN
 ===================================================== */
+function renderAdminImportButton() {
+  const adminPanel = document.querySelector('#modal-admin-panel .modal-content');
+  if (!adminPanel) return;
+  if (document.getElementById('btn-import-json-admin')) return;
+
+  const btn = document.createElement('button');
+  btn.id = 'btn-import-json-admin';
+  btn.innerHTML = '📋 Importar Producto desde JSON';
+  btn.style.cssText = `
+    width: calc(100% - 30px);
+    margin: 15px 15px 0 15px;
+    padding: 15px;
+    background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+    color: white;
+    font-size: 14px;
+    font-weight: 800;
+    border-radius: 12px;
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+    transition: transform 0.2s;
+  `;
+  btn.onmouseover = () => btn.style.transform = 'translateY(-2px)';
+  btn.onmouseout = () => btn.style.transform = 'translateY(0)';
+  btn.onclick = () => openImportJSONModal();
+
+  const tabs = document.getElementById('admin-tabs');
+  if (tabs) {
+    adminPanel.insertBefore(btn, tabs);
+  }
+}
 document.getElementById('admin-tabs').addEventListener('click', e => {
   const tab = e.target.closest('.admin-tab');
   if (!tab) return;
