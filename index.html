@@ -1500,14 +1500,28 @@ async function comprimirImagenImport(file, maxWidth, quality, maxSizeBytes) {
 
 function renderImportPreview(container) {
   if (importPreviewData.length === 0) {
-    container.innerHTML = '<div class="empty-message">No hay productos válidos para importar.</div>';
+    showToast('No hay productos válidos para importar.', 'error');
     return;
   }
 
-  let html = `
-    <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg);">
-      <h4 style="margin-bottom: 15px;">Vista Previa (${importPreviewData.length} productos)</h4>
-      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto;">
+  // Creamos un modal flotante para la vista previa
+  const modalId = 'modal-zip-preview';
+  let existingModal = document.getElementById(modalId);
+  if (existingModal) existingModal.remove();
+
+  const modal = document.createElement('div');
+  modal.id = modalId;
+  modal.className = 'modal-overlay show';
+  modal.style.zIndex = '3000';
+
+  let contentHtml = `
+    <div class="modal-content wide">
+      <div class="modal-header">
+        <h3>📦 Vista Previa de Importación (${importPreviewData.length} productos)</h3>
+        <button class="close-modal" onclick="document.getElementById('${modalId}').remove()">✕</button>
+      </div>
+      <div class="modal-body">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto; margin-bottom: 15px;">
   `;
 
   importPreviewData.forEach((p) => {
@@ -1516,8 +1530,8 @@ function renderImportPreview(container) {
       return `<img src="${url}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 4px;">`;
     }).join('');
 
-    html += `
-      <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+    contentHtml += `
+      <div style="background: var(--bg); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
         <div style="display: flex; gap: 5px; margin-bottom: 5px;">${miniaturas || 'Sin fotos'}</div>
         <strong style="font-size: 11px;">${escapeHtml(p.nombre)}</strong>
         <div style="font-size: 10px; color: var(--orange);">RD$ ${formatPrice(p.precio)}</div>
@@ -1526,16 +1540,16 @@ function renderImportPreview(container) {
     `;
   });
 
-  html += `
-      </div>
-      <div style="margin-top: 15px; display: flex; gap: 10px;">
-        <button class="btn-primary" style="background: var(--green);" onclick="confirmImport()">✅ Confirmar e Importar</button>
-        <button class="btn-secondary" onclick="document.getElementById('zip-preview-area').innerHTML = ''">Cancelar</button>
+  contentHtml += `
+        </div>
+        <button class="btn-primary" style="background: var(--green);" onclick="document.getElementById('${modalId}').remove(); confirmImport();">✅ Confirmar e Importar</button>
+        <button class="btn-secondary" onclick="document.getElementById('${modalId}').remove()">Cancelar</button>
       </div>
     </div>
   `;
 
-  container.innerHTML = html;
+  modal.innerHTML = contentHtml;
+  document.body.appendChild(modal);
 }
 
 async function confirmImport() {
@@ -1601,7 +1615,8 @@ async function confirmImport() {
   }
 
   showToast(`Importación finalizada: ${importados} productos, ${errores} errores.`, errores > 0 ? 'error' : 'success');
-  document.getElementById('zip-preview-area').innerHTML = '';
+  
+  // Limpieza (ya no usamos zip-preview-area, así que no hay que limpiarlo)
   importPreviewData = [];
   await fetchProducts();
 }
