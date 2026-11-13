@@ -1616,7 +1616,6 @@ async function confirmImport() {
 
   showToast(`Importación finalizada: ${importados} productos, ${errores} errores.`, errores > 0 ? 'error' : 'success');
   
-  // Limpieza (ya no usamos zip-preview-area, así que no hay que limpiarlo)
   importPreviewData = [];
   await fetchProducts();
 }
