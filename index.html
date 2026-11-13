@@ -177,6 +177,8 @@ body.dark-mode .cod-footer-banner{background:#33271f;border-color:#59402d;color:
 /* FAB */
 .fab-button{position:fixed;right:20px;bottom:25px;width:58px;height:58px;border-radius:19px;background:var(--orange);color:#fff;font-size:24px;box-shadow:0 8px 25px rgba(255,117,24,.35);z-index:90;display:none;align-items:center;justify-content:center}
 body.is-admin .fab-button { display: flex !important; }
+body.is-admin #admin-fab-container { display: flex !important; }
+body:not(.is-admin) #admin-fab-container { display: none !important; }
 body.is-admin .btn-fab-zip { display: flex !important; }
 
 /* MODALS */
