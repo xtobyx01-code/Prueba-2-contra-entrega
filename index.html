@@ -1374,7 +1374,232 @@ async function insertOrderRobust(baseData) {
 
   return { ok: false, error: r.error || firstErr };
 }
+/* =====================================================
+   IMPORTACIÓN MASIVA DE PRODUCTOS DESDE ZIP
+===================================================== */
 
+let importPreviewData = [];
+
+async function handleZipUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const previewArea = document.getElementById('zip-preview-area');
+  previewArea.innerHTML = '<div class="loading-state"><div class="spinner"></div>Leyendo ZIP y procesando imágenes...</div>';
+
+  try {
+    const zip = await JSZip.loadAsync(file);
+    const csvFile = zip.file(/\.csv$/i)[0];
+    if (!csvFile) throw new Error('No se encontró ningún archivo CSV dentro del ZIP.');
+
+    const csvText = await csvFile.async('string');
+    const results = Papa.parse(csvText, { header: true, skipEmptyLines: true });
+    
+    importPreviewData = [];
+    const erroresFilas = [];
+
+    for (let i = 0; i < results.data.length; i++) {
+      const row = results.data[i];
+      const nombre = row.nombre?.trim();
+      if (!nombre) continue;
+
+      if (!row.precio_rd) {
+        erroresFilas.push(`Fila ${i+1} (${nombre}): Falta precio_rd.`);
+        continue;
+      }
+
+      const imagenesBlobs = [];
+      for (let j = 1; j <= 4; j++) {
+        const imgName = row[`imagen_${j}`]?.trim();
+        if (!imgName) continue;
+
+        const imgPath = `fotos/${imgName}`;
+        const imgFile = zip.file(imgPath) || zip.file(imgName);
+        
+        if (!imgFile) {
+          erroresFilas.push(`Fila ${i+1} (${nombre}): No se encontró "${imgName}".`);
+          continue;
+        }
+
+        const originalBlob = await imgFile.async('blob');
+        try {
+          const compressed = await comprimirImagenImport(originalBlob, 800, 0.82, 200 * 1024);
+          imagenesBlobs.push(compressed.blob);
+        } catch (e) {
+          erroresFilas.push(`Fila ${i+1} (${nombre}): Error comprimiendo "${imgName}".`);
+        }
+      }
+
+      importPreviewData.push({
+        nombre: nombre,
+        precio: parseFloat(row.precio_rd) || 0,
+        precio_oferta: parseFloat(row.precio_oferta) || null,
+        categoria: row.categoria || 'General',
+        stock: parseInt(row.stock) || 0,
+        descripcion: row.descripcion || '',
+        imagenesBlobs: imagenesBlobs
+      });
+    }
+
+    if (erroresFilas.length > 0) {
+      showToast(`Se encontraron ${erroresFilas.length} errores. Revisa la consola.`, 'error');
+      console.warn('Errores:', erroresFilas);
+    }
+
+    renderImportPreview(previewArea);
+
+  } catch (error) {
+    console.error(error);
+    previewArea.innerHTML = `<div class="empty-message" style="color: var(--red);">Error: ${error.message}</div>`;
+  }
+}
+
+async function comprimirImagenImport(file, maxWidth, quality, maxSizeBytes) {
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+  
+  await new Promise((resolve, reject) => {
+    img.onload = resolve;
+    img.onerror = () => reject(new Error('No se pudo decodificar la imagen.'));
+    img.src = objectUrl;
+  });
+
+  let width = img.width;
+  let height = img.height;
+  if (width > maxWidth) {
+    height = height * (maxWidth / width);
+    width = maxWidth;
+  }
+
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(width);
+  canvas.height = Math.round(height);
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+  URL.revokeObjectURL(objectUrl);
+
+  let currentQuality = quality;
+  let blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', currentQuality));
+  
+  let intentos = 0;
+  while (blob.size > maxSizeBytes && intentos < 2) {
+    currentQuality = 0.75;
+    blob = await new Promise(res => canvas.toBlob(res, 'image/jpeg', currentQuality));
+    intentos++;
+  }
+
+  return { blob };
+}
+
+function renderImportPreview(container) {
+  if (importPreviewData.length === 0) {
+    container.innerHTML = '<div class="empty-message">No hay productos válidos para importar.</div>';
+    return;
+  }
+
+  let html = `
+    <div style="border: 1px solid var(--border); border-radius: 12px; padding: 15px; background: var(--bg);">
+      <h4 style="margin-bottom: 15px;">Vista Previa (${importPreviewData.length} productos)</h4>
+      <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 15px; max-height: 400px; overflow-y: auto;">
+  `;
+
+  importPreviewData.forEach((p) => {
+    const miniaturas = p.imagenesBlobs.map(b => {
+      const url = URL.createObjectURL(b);
+      return `<img src="${url}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 5px; margin-right: 4px;">`;
+    }).join('');
+
+    html += `
+      <div style="background: var(--card); border: 1px solid var(--border); padding: 10px; border-radius: 8px;">
+        <div style="display: flex; gap: 5px; margin-bottom: 5px;">${miniaturas || 'Sin fotos'}</div>
+        <strong style="font-size: 11px;">${escapeHtml(p.nombre)}</strong>
+        <div style="font-size: 10px; color: var(--orange);">RD$ ${formatPrice(p.precio)}</div>
+        <div style="font-size: 9px; color: var(--muted);">${escapeHtml(p.categoria)} · Stock: ${p.stock}</div>
+      </div>
+    `;
+  });
+
+  html += `
+      </div>
+      <div style="margin-top: 15px; display: flex; gap: 10px;">
+        <button class="btn-primary" style="background: var(--green);" onclick="confirmImport()">✅ Confirmar e Importar</button>
+        <button class="btn-secondary" onclick="document.getElementById('zip-preview-area').innerHTML = ''">Cancelar</button>
+      </div>
+    </div>
+  `;
+
+  container.innerHTML = html;
+}
+
+async function confirmImport() {
+  showToast('Iniciando importación...', 'info');
+  
+  let importados = 0;
+  let errores = 0;
+
+  for (const item of importPreviewData) {
+    try {
+      const urls = [];
+      for (let i = 0; i < item.imagenesBlobs.length; i++) {
+        const blob = item.imagenesBlobs[i];
+        const fileName = `${Date.now()}_${i}_${Math.random().toString(36).slice(2)}.jpg`;
+        
+        const { error: upErr } = await supabaseClient.storage
+          .from('product-images')
+          .upload(fileName, blob, { cacheControl: '3600', upsert: false, contentType: 'image/jpeg' });
+        
+        if (upErr) throw upErr;
+        
+        const { data: pub } = supabaseClient.storage.from('product-images').getPublicUrl(fileName);
+        urls.push(pub.publicUrl);
+      }
+
+      const { data: existing } = await supabaseClient.from('products').select('id').eq('nombre', item.nombre).maybeSingle();
+      
+      let action = 'insert';
+      if (existing) {
+        const respuesta = confirm(`El producto "${item.nombre}" ya existe. ¿Deseas actualizarlo? (Cancelar = Omitir)`);
+        if (respuesta) action = 'update';
+        else action = 'skip';
+      }
+
+      if (action === 'skip') continue;
+
+      const productData = {
+        nombre: item.nombre,
+        precio_rd: item.precio,
+        precio_oferta: item.precio_oferta,
+        categoria: item.categoria,
+        stock: item.stock,
+        descripcion: item.descripcion,
+        imagen_1: urls[0] || null,
+        imagen_2: urls[1] || null,
+        imagen_3: urls[2] || null,
+        imagen_4: urls[3] || null
+      };
+
+      if (action === 'update') {
+        const { error } = await supabaseClient.from('products').update(productData).eq('id', existing.id);
+        if (error) throw error;
+      } else {
+        const { error } = await supabaseClient.from('products').insert([productData]);
+        if (error) throw error;
+      }
+      
+      importados++;
+    } catch (error) {
+      console.error('Error importando:', item.nombre, error);
+      errores++;
+    }
+  }
+
+  showToast(`Importación finalizada: ${importados} productos, ${errores} errores.`, errores > 0 ? 'error' : 'success');
+  document.getElementById('zip-preview-area').innerHTML = '';
+  importPreviewData = [];
+  await fetchProducts();
+}
 /* =====================================================
    PEDIDO INDIVIDUAL
 ===================================================== */
