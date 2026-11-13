@@ -2698,6 +2698,7 @@ function openAdminPanel() {
   if (!state.isAdmin) { showToast('Acceso restringido.', 'error'); return; }
   openModal('modal-admin-panel');
   switchAdminTab('summary');
+  setTimeout(renderAdminImportButton, 100);
 }
 
 document.getElementById('admin-tabs').addEventListener('click', e => {
