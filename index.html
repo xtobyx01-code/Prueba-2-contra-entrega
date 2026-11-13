@@ -176,7 +176,7 @@ body.dark-mode .cod-footer-banner{background:#33271f;border-color:#59402d;color:
 
 /* FAB */
 .fab-button{position:fixed;right:20px;bottom:25px;width:58px;height:58px;border-radius:19px;background:var(--orange);color:#fff;font-size:24px;box-shadow:0 8px 25px rgba(255,117,24,.35);z-index:90;display:none;align-items:center;justify-content:center}
-body.is-admin .fab-button{display:flex}
+body.is-admin .fab-button{display:flex !important}
 
 /* MODALS */
 .modal-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;padding:15px;background:rgba(10,15,25,.65);backdrop-filter:blur(5px);opacity:0;visibility:hidden;transition:.25s}
@@ -414,7 +414,10 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </header>
 
-<button id="add-product-btn" class="fab-button" onclick="openNewProductModal()" title="Agregar producto">＋</button>
+<div id="admin-fab-container" style="position: fixed; right: 20px; bottom: 25px; z-index: 90; display: flex; flex-direction: column; gap: 10px;">
+  <button id="import-zip-btn" class="fab-button" onclick="document.getElementById('zip-import-input').click()" title="Importar ZIP" style="background: var(--green); display: none;">📦</button>
+  <button id="add-product-btn" class="fab-button" onclick="openNewProductModal()" title="Agregar producto">＋</button>
+</div>
 
 <main class="content-wrapper">
 
@@ -755,6 +758,8 @@ button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,te
   </div>
 </div>
 <div id="toast-notification" class="toast"></div>
+<!-- Input oculto para importar ZIP -->
+<input type="file" id="zip-import-input" accept=".zip" hidden onchange="handleZipUpload(event)">
 <script>
 /* =====================================================
    SUPABASE
@@ -2821,23 +2826,13 @@ function contactOrderCustomer(orderId) {
 }
 
 function renderAdminInventory(pane) {
-  // 1. Empezamos el HTML con el botón de importación
-  let html = `
-    <button class="btn-primary" style="margin-bottom: 15px; background: var(--navy);" onclick="document.getElementById('zip-import-input').click()">
-      📦 Importar ZIP de Productos
-    </button>
-    <input type="file" id="zip-import-input" accept=".zip" hidden onchange="handleZipUpload(event)">
-    <div id="zip-preview-area" style="margin-bottom: 20px;"></div>
-  `;
-
-  // 2. Si no hay productos, mostramos el mensaje de vacío y cortamos
+  // 1. Si no hay productos, mostramos el mensaje de vacío
   if (!state.products.length) {
-    html += `<div class="empty-message"><span>📦</span><h3>Sin productos</h3></div>`;
-    pane.innerHTML = html;
+    pane.innerHTML = `<div class="empty-message"><span>📦</span><h3>Sin productos</h3></div>`;
     return;
   }
 
-  // 3. Si hay productos, construimos las filas de la tabla
+  // 2. Si hay productos, construimos las filas de la tabla
   const rows = state.products.map(p => {
     const stock = Number(p.stock || 0);
     const cls = stock <= 0 ? 'danger' : stock < 5 ? 'warn' : '';
@@ -2851,8 +2846,8 @@ function renderAdminInventory(pane) {
     </tr>`;
   }).join('');
 
-  // 4. Sumamos la tabla al HTML (usando += para no borrar el botón)
-  html += `
+  // 3. Pintamos la tabla
+  pane.innerHTML = `
     <div class="table-wrap">
       <table class="data-table">
         <thead><tr><th>Producto</th><th>SKU</th><th>Stock</th><th>Estado</th><th>Precio</th><th></th></tr></thead>
@@ -2860,6 +2855,7 @@ function renderAdminInventory(pane) {
       </table>
     </div>
   `;
+}
 
   // 5. Finalmente, pintamos todo junto (botón + tabla)
   pane.innerHTML = html;
